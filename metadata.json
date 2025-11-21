@@ -1,0 +1,6 @@
+{
+  "name": "Doorap",
+  "description": "A comprehensive CRM for property managers to handle properties, tenants, maintenance, reminders, and SLAs, with mock integration for a home services marketplace.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
