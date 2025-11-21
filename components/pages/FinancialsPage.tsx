@@ -1,26 +1,17 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { RentPayment, Expense, Property, Tenant, Landlord } from '../../types';
 import PageHeader from '../PageHeader';
 import Button from '../common/Button';
-import Modal from '../common/Modal';
-import Input from '../common/Input';
 import { 
-    PlusCircleIcon, PencilIcon, TrashIcon, PresentationChartLineIcon, 
-    BuildingLibraryIcon, CreditCardIcon, DocumentTextIcon, ChartPieIcon,
-    ArrowUpRightIcon, ArrowDownLeftIcon, CheckCircleIcon, ClockIcon,
-    ShieldCheckIcon, CalculatorIcon, ArrowPathIcon,
-    CurrencyDollarIconSolid, BanknotesIcon, ExclamationTriangleIcon,
-    LinkIcon, CalendarDaysIcon, UserGroupIcon, XMarkIcon, GlobeAltIcon
+    PlusCircleIcon, ArrowUpRightIcon, ArrowDownLeftIcon, 
+    CreditCardIcon, DocumentTextIcon,
+    BanknotesIcon, LinkIcon
 } from '../icons/HeroIcons';
 import RentPaymentForm from '../forms/RentPaymentForm';
 import ExpenseForm from '../forms/ExpenseForm';
-import { 
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
-} from 'recharts';
-import Select from '../common/Select';
 
-// --- Mock Data for Open Banking Feed ---
+// --- Mock Data ---
 const MOCK_BANK_TRANSACTIONS = [
     { id: 'tx_1', date: new Date().toISOString(), description: 'FPS CREDIT FROM A. WONDERLAND', amount: 1200, type: 'credit', status: 'matched', matchId: 'ten1' },
     { id: 'tx_2', date: new Date(Date.now() - 86400000).toISOString(), description: 'DIRECT DEBIT BGAS SERVICES', amount: -45.50, type: 'debit', status: 'auto-categorized', category: 'Utilities' },
@@ -29,39 +20,12 @@ const MOCK_BANK_TRANSACTIONS = [
     { id: 'tx_5', date: new Date(Date.now() - 345600000).toISOString(), description: 'UNKNOWN CREDIT REF 99281', amount: 500, type: 'credit', status: 'unreconciled' },
 ];
 
-// Stripe specific transactions (Cleaner, richer data)
-const STRIPE_TREASURY_TRANSACTIONS = [
-    { id: 'stx_1', date: new Date().toISOString(), description: 'Transfer from Stripe Balance', amount: 2450.00, type: 'credit', status: 'settled' },
-    { id: 'stx_2', date: new Date(Date.now() - 3600000).toISOString(), description: 'Card Payment - Alice Wonderland (Rent)', amount: 1200.00, type: 'credit', status: 'settled', fee: 25.00 },
-    { id: 'stx_3', date: new Date(Date.now() - 86400000).toISOString(), description: 'Card Payment - Bob Builder (Rent)', amount: 950.00, type: 'credit', status: 'settled', fee: 20.50 },
-];
-
-const INITIAL_PORTFOLIO_HEALTH_DATA = [
-    { id: 'ph_1', name: '123 Main St', yield: 5.2, status: 'Good', reviewDue: '2024-12-01', projectedRent: 1350, currentRent: 1200 },
-    { id: 'ph_2', name: 'Apt 4B', yield: 3.8, status: 'Review', reviewDue: 'Overdue', projectedRent: 1100, currentRent: 950 },
-    { id: 'ph_3', name: 'Unit 7', yield: 6.5, status: 'Excellent', reviewDue: '2025-03-15', projectedRent: 5500, currentRent: 5000 },
-];
-
 const STRIPE_DATA = {
     available: 2450.00,
     pending: 850.00,
     inTransit: 1200.00,
     nextPayout: new Date(Date.now() + 86400000).toISOString(),
 };
-
-const INITIAL_PAYMENT_LINKS = [
-    { id: 'pl_1', description: 'Security Deposit - Unit 4B', amount: 1200, created: new Date(Date.now() - 100000000).toISOString(), status: 'Paid', tenant: 'New Tenant A' },
-    { id: 'pl_2', description: 'Late Fee - Nov Rent', amount: 50, created: new Date(Date.now() - 20000000).toISOString(), status: 'Open', tenant: 'Bob Builder' },
-    { id: 'pl_3', description: 'Replacement Keys', amount: 25, created: new Date().toISOString(), status: 'Open', tenant: 'Alice Wonderland' },
-];
-
-const INITIAL_RECURRING_EXPENSES = [
-    { id: 'rec_1', vendor: 'British Gas', description: 'Utilities - 123 Main St', amount: 145.00, frequency: 'Monthly', nextDue: new Date(Date.now() + 86400000 * 5).toISOString(), status: 'Active', lastStatus: 'Paid' },
-    { id: 'rec_2', vendor: 'CleanCo Ltd', description: 'Communal Cleaning - Block A', amount: 80.00, frequency: 'Weekly', nextDue: new Date(Date.now() + 86400000 * 2).toISOString(), status: 'Active', lastStatus: 'Paid' },
-    { id: 'rec_3', vendor: 'Halifax', description: 'Mortgage - Apt 4B', amount: 650.00, frequency: 'Monthly', nextDue: new Date(Date.now() + 86400000 * 15).toISOString(), status: 'Review Needed', lastStatus: 'Price Change' },
-];
-
-// --- Sub-Components ---
 
 const StatWidget = ({ title, value, trend, icon, color }: any) => (
     <div className="bg-white p-5 rounded-lg border border-zinc-200 shadow-sm flex flex-col justify-between h-32">
@@ -132,44 +96,200 @@ interface FinancialsPageProps {
 const FinancialsPage: React.FC<FinancialsPageProps> = ({
   rentPayments, addRentPayment, updateRentPayment, deleteRentPayment,
   expenses, addExpense, updateExpense, deleteExpense,
-  properties, tenants, landlords
+  properties, tenants
 }) => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'income' | 'expenses' | 'reporting' | 'forecasting'>('dashboard');
-  const [activeIncomeView, setActiveIncomeView] = useState<'bank' | 'links' | 'recurring'>('bank');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'income' | 'expenses'>('dashboard');
   
-  // Local State for Lists
-  const [paymentLinks, setPaymentLinks] = useState(INITIAL_PAYMENT_LINKS);
-  const [recurringExpenses, setRecurringExpenses] = useState(INITIAL_RECURRING_EXPENSES);
-  const [portfolioHealthData, setPortfolioHealthData] = useState(INITIAL_PORTFOLIO_HEALTH_DATA);
-
-  // Client Accounting State
-  const [selectedLandlordId, setSelectedLandlordId] = useState<string>('all');
-
-  // Modal States
   const [isRentFormOpen, setIsRentFormOpen] = useState(false);
   const [editingRentPayment, setEditingRentPayment] = useState<RentPayment | null>(null);
   const [isExpenseFormOpen, setIsExpenseFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
-  
-  const [isArrearsModalOpen, setIsArrearsModalOpen] = useState(false);
-  const [isWorkflowModalOpen, setIsWorkflowModalOpen] = useState(false);
-  const [isPaymentLinkModalOpen, setIsPaymentLinkModalOpen] = useState(false);
-  const [isRecurringPaymentModalOpen, setIsRecurringPaymentModalOpen] = useState(false);
-  const [isRentReviewModalOpen, setIsRentReviewModalOpen] = useState(false);
-  const [rentReviewProperty, setRentReviewProperty] = useState<any>(null);
 
-  // Simulate if the user has connected stripe (mock check against profile would go here)
-  // For demo purposes, we'll assume true if specific condition or toggle in settings
-  const isStripeConnected = true; 
+  const handleAddRentPayment = () => { setEditingRentPayment(null); setIsRentFormOpen(true); };
+  const handleEditRentPayment = (payment: RentPayment) => { setEditingRentPayment(payment); setIsRentFormOpen(true); };
+  const handleDeleteRentPayment = (id: string) => { if (window.confirm('Delete payment?')) deleteRentPayment(id); };
+  const handleRentSubmit = (payment: RentPayment) => {
+      if (editingRentPayment) updateRentPayment(payment); else addRentPayment(payment);
+      setIsRentFormOpen(false);
+  }
 
-  // --- AGGREGATIONS & HELPERS ---
+  const handleAddExpense = () => { setEditingExpense(null); setIsExpenseFormOpen(true); };
+  const handleEditExpense = (expense: Expense) => { setEditingExpense(expense); setIsExpenseFormOpen(true); };
+  const handleDeleteExpense = (id: string) => { if (window.confirm('Delete expense?')) deleteExpense(id); };
+  const handleExpenseSubmit = (expense: Expense) => {
+      if (editingExpense) updateExpense(expense); else addExpense(expense);
+      setIsExpenseFormOpen(false);
+  }
 
-  // 1. Calculate Agency Revenue (Management Fees)
-  const calculateManagementFee = (propertyId: string, rentAmount: number) => {
-      const property = properties.find(p => p.id === propertyId);
-      if (!property) return 0;
-      if (property.managementFeeType === 'Fixed') {
-          return property.managementFeeValue || 0;
-      } else {
-          // Percentage
-          const percent = property.managementFeeValue || 10; // Default
+  return (
+    <div className="animate-fade-in">
+      <PageHeader 
+        title="Financials & Banking" 
+        subtitle="Track income, expenses, and treasury in real-time."
+        actions={
+            <div className="flex gap-2">
+                <Button onClick={handleAddExpense} variant="secondary" leftIcon={<PlusCircleIcon className="w-4 h-4"/>}>Log Expense</Button>
+                <Button onClick={handleAddRentPayment} leftIcon={<PlusCircleIcon className="w-4 h-4"/>}>Log Rent</Button>
+            </div>
+        }
+      />
+
+      {/* Tabs */}
+      <div className="border-b border-zinc-200 mb-6 bg-white px-2 rounded-t-lg">
+        <nav className="-mb-px flex space-x-6 overflow-x-auto">
+            {['dashboard', 'income', 'expenses'].map((tab) => (
+                <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab as any)}
+                    className={`${
+                        activeTab === tab
+                            ? 'border-zinc-900 text-zinc-900'
+                            : 'border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300'
+                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm capitalize`}
+                >
+                    {tab}
+                </button>
+            ))}
+        </nav>
+      </div>
+
+      {activeTab === 'dashboard' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <StatWidget title="Total Revenue (MTD)" value="£14,250" trend="+8.2%" icon={<BanknotesIcon/>} color="bg-green-500" />
+                      <StatWidget title="Total Expenses (MTD)" value="£3,840" trend="-2.1%" icon={<ArrowDownLeftIcon/>} color="bg-red-500" />
+                  </div>
+                  <div className="bg-white p-6 rounded-lg border border-zinc-200 shadow-sm">
+                      <h3 className="font-bold text-zinc-900 mb-4">Recent Transactions</h3>
+                      <div className="space-y-3">
+                          {MOCK_BANK_TRANSACTIONS.map(tx => (
+                              <div key={tx.id} className="flex justify-between items-center p-3 hover:bg-zinc-50 rounded border border-transparent hover:border-zinc-100">
+                                  <div className="flex items-center gap-3">
+                                      <div className={`p-2 rounded-full ${tx.type === 'credit' ? 'bg-green-100 text-green-600' : 'bg-zinc-100 text-zinc-600'}`}>
+                                          {tx.type === 'credit' ? <ArrowDownLeftIcon className="w-4 h-4"/> : <ArrowUpRightIcon className="w-4 h-4"/>}
+                                      </div>
+                                      <div>
+                                          <p className="text-sm font-medium text-zinc-900">{tx.description}</p>
+                                          <p className="text-xs text-zinc-500">{new Date(tx.date).toLocaleDateString()} • {tx.status}</p>
+                                      </div>
+                                  </div>
+                                  <span className={`font-bold text-sm ${tx.amount > 0 ? 'text-green-600' : 'text-zinc-900'}`}>
+                                      {tx.amount > 0 ? '+' : ''}£{Math.abs(tx.amount).toFixed(2)}
+                                  </span>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+              </div>
+              <div className="space-y-6">
+                  <div className="h-64">
+                    <StripeTreasuryCard />
+                  </div>
+                  <div className="bg-white p-6 rounded-lg border border-zinc-200 shadow-sm">
+                      <h3 className="font-bold text-zinc-900 mb-4">Quick Actions</h3>
+                      <div className="space-y-2">
+                          <Button size="sm" variant="outline" className="w-full justify-start" leftIcon={<LinkIcon className="w-4 h-4"/>}>Create Payment Link</Button>
+                          <Button size="sm" variant="outline" className="w-full justify-start" leftIcon={<DocumentTextIcon className="w-4 h-4"/>}>Reconcile Transactions</Button>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {activeTab === 'income' && (
+          <div className="bg-white rounded-lg border border-zinc-200 shadow-sm overflow-hidden">
+              <table className="min-w-full divide-y divide-zinc-100">
+                  <thead className="bg-zinc-50">
+                      <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Date</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Property</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Tenant</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 uppercase">Amount</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 uppercase">Actions</th>
+                      </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-zinc-100">
+                      {rentPayments.map(rp => {
+                          const property = properties.find(p => p.id === rp.propertyId);
+                          const tenant = tenants.find(t => t.id === rp.tenantId);
+                          return (
+                              <tr key={rp.id} className="hover:bg-zinc-50">
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900">{new Date(rp.date).toLocaleDateString()}</td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">{property?.address}</td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">{tenant?.name}</td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-green-600">£{rp.amount.toLocaleString()}</td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                      <button onClick={() => handleEditRentPayment(rp)} className="text-indigo-600 hover:text-indigo-900 mr-3">Edit</button>
+                                      <button onClick={() => handleDeleteRentPayment(rp.id)} className="text-red-600 hover:text-red-900">Delete</button>
+                                  </td>
+                              </tr>
+                          )
+                      })}
+                      {rentPayments.length === 0 && <tr><td colSpan={5} className="px-6 py-4 text-center text-zinc-400 text-sm">No rent payments recorded.</td></tr>}
+                  </tbody>
+              </table>
+          </div>
+      )}
+
+      {activeTab === 'expenses' && (
+          <div className="bg-white rounded-lg border border-zinc-200 shadow-sm overflow-hidden">
+              <table className="min-w-full divide-y divide-zinc-100">
+                  <thead className="bg-zinc-50">
+                      <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Date</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Property</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Category</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Description</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 uppercase">Amount</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 uppercase">Actions</th>
+                      </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-zinc-100">
+                      {expenses.map(exp => {
+                          const property = properties.find(p => p.id === exp.propertyId);
+                          return (
+                              <tr key={exp.id} className="hover:bg-zinc-50">
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900">{new Date(exp.date).toLocaleDateString()}</td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">{property?.address}</td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">{exp.category}</td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">{exp.description}</td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-red-600">£{exp.amount.toLocaleString()}</td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                      <button onClick={() => handleEditExpense(exp)} className="text-indigo-600 hover:text-indigo-900 mr-3">Edit</button>
+                                      <button onClick={() => handleDeleteExpense(exp.id)} className="text-red-600 hover:text-red-900">Delete</button>
+                                  </td>
+                              </tr>
+                          )
+                      })}
+                      {expenses.length === 0 && <tr><td colSpan={6} className="px-6 py-4 text-center text-zinc-400 text-sm">No expenses recorded.</td></tr>}
+                  </tbody>
+              </table>
+          </div>
+      )}
+
+      {/* Modals */}
+      {isRentFormOpen && (
+          <RentPaymentForm
+              isOpen={isRentFormOpen}
+              onClose={() => setIsRentFormOpen(false)}
+              onSubmit={handleRentSubmit}
+              initialData={editingRentPayment}
+              properties={properties}
+              tenants={tenants}
+          />
+      )}
+      {isExpenseFormOpen && (
+          <ExpenseForm
+              isOpen={isExpenseFormOpen}
+              onClose={() => setIsExpenseFormOpen(false)}
+              onSubmit={handleExpenseSubmit}
+              initialData={editingExpense}
+              properties={properties}
+          />
+      )}
+    </div>
+  );
+};
+
+export default FinancialsPage;

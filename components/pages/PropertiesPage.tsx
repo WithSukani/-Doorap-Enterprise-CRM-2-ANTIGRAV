@@ -4,7 +4,7 @@ import { Property, Tenant, MaintenanceRequest, Document, CommunicationLog, Docum
 import PageHeader from '../PageHeader';
 import Button from '../common/Button';
 import PropertyForm from '../forms/PropertyForm';
-import { PlusCircleIcon, PencilIcon, TrashIcon, MapPinIcon, BuildingOffice2Icon, ArchiveBoxArrowDownIcon, ArrowUturnLeftIcon } from '../icons/HeroIcons'; 
+import { PlusCircleIcon, PencilIcon, TrashIcon, MapPinIcon, BuildingOffice2Icon, ArchiveBoxArrowDownIcon, ArrowUturnLeftIcon, ListBulletIcon, Squares2X2Icon, EyeIcon } from '../icons/HeroIcons'; 
 import PropertyDetailsModal from '../modals/PropertyDetailsModal';
 import MarketAnalysisModal from '../modals/MarketAnalysisModal';
 
@@ -101,6 +101,7 @@ const PropertiesPage: React.FC<PropertiesPageProps> = ({
     documentTemplates, userProfile,
     meterReadings, onAddMeterReading
 }) => {
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [viewingProperty, setViewingProperty] = useState<Property | null>(null);
@@ -170,9 +171,15 @@ const PropertiesPage: React.FC<PropertiesPageProps> = ({
       <PageHeader 
         title="Properties" 
         actions={
-          <Button onClick={handleAddProperty} leftIcon={<PlusCircleIcon className="w-5 h-5"/>}>
-            Add Property
-          </Button>
+          <div className="flex gap-2">
+            <div className="flex bg-zinc-100 p-1 rounded-lg border border-zinc-200 mr-2">
+                <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-400 hover:text-zinc-600'}`} title="Grid View"><Squares2X2Icon className="w-5 h-5"/></button>
+                <button onClick={() => setViewMode('table')} className={`p-1.5 rounded-md transition-all ${viewMode === 'table' ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-400 hover:text-zinc-600'}`} title="Table View"><ListBulletIcon className="w-5 h-5"/></button>
+            </div>
+            <Button onClick={handleAddProperty} leftIcon={<PlusCircleIcon className="w-5 h-5"/>}>
+                Add Property
+            </Button>
+          </div>
         }
       />
        <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -200,19 +207,90 @@ const PropertiesPage: React.FC<PropertiesPageProps> = ({
       </div>
 
       {filteredProperties.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProperties.map(property => (
-            <PropertyCard 
-              key={property.id} 
-              property={property} 
-              onEdit={handleEditProperty} 
-              onDelete={handleDeleteProperty}
-              onViewDetails={handleViewDetails}
-              onArchive={handleArchiveProperty}
-              onRestore={handleRestoreProperty}
-            />
-          ))}
-        </div>
+        viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProperties.map(property => (
+                <PropertyCard 
+                key={property.id} 
+                property={property} 
+                onEdit={handleEditProperty} 
+                onDelete={handleDeleteProperty}
+                onViewDetails={handleViewDetails}
+                onArchive={handleArchiveProperty}
+                onRestore={handleRestoreProperty}
+                />
+            ))}
+            </div>
+        ) : (
+            <div className="bg-white border border-zinc-200 rounded-lg shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-zinc-100">
+                        <thead className="bg-zinc-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Property</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Type</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Owner</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 uppercase tracking-wider">Est. Value</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-zinc-100">
+                            {filteredProperties.map((property) => {
+                                const isOccupied = tenants.some(t => t.propertyId === property.id);
+                                return (
+                                    <tr key={property.id} className={`hover:bg-zinc-50 transition-colors group ${property.isArchived ? 'opacity-60 grayscale' : ''}`}>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="flex items-center">
+                                                <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-md border border-zinc-200">
+                                                    <img className="h-full w-full object-cover" src={property.imageUrl || 'https://picsum.photos/100/100'} alt="" />
+                                                </div>
+                                                <div className="ml-4">
+                                                    <div className="text-sm font-medium text-zinc-900">{property.address}</div>
+                                                    <div className="text-xs text-zinc-500">{property.postcode}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">
+                                            {property.type}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900">
+                                            {property.ownerName}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            {property.isArchived ? (
+                                                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-zinc-100 text-zinc-600 border border-zinc-200">Archived</span>
+                                            ) : isOccupied ? (
+                                                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 border border-green-200">Occupied</span>
+                                            ) : (
+                                                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 border border-red-200">Vacant</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-zinc-900">
+                                            £{property.value?.toLocaleString() || '-'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <div className="flex justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={() => handleViewDetails(property)} className="text-zinc-400 hover:text-zinc-600 p-1" title="View Details"><EyeIcon className="w-4 h-4"/></button>
+                                                {!property.isArchived ? (
+                                                    <>
+                                                        <button onClick={() => handleEditProperty(property)} className="text-zinc-400 hover:text-zinc-600 p-1" title="Edit"><PencilIcon className="w-4 h-4"/></button>
+                                                        <button onClick={() => handleArchiveProperty(property)} className="text-zinc-400 hover:text-zinc-600 p-1" title="Archive"><ArchiveBoxArrowDownIcon className="w-4 h-4"/></button>
+                                                    </>
+                                                ) : (
+                                                    <button onClick={() => handleRestoreProperty(property)} className="text-green-500 hover:text-green-700 p-1" title="Restore"><ArrowUturnLeftIcon className="w-4 h-4"/></button>
+                                                )}
+                                                <button onClick={() => handleDeleteProperty(property.id)} className="text-red-400 hover:text-red-600 p-1" title="Delete"><TrashIcon className="w-4 h-4"/></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        )
       ) : (
         <div className="text-center py-16 bg-white rounded-lg border border-dashed border-zinc-200">
             <div className="bg-zinc-50 p-4 rounded-full inline-block mb-4">
