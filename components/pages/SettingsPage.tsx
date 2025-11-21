@@ -9,7 +9,7 @@ import Modal from '../common/Modal';
 import { 
     UserPlusIcon, PencilIcon, TrashIcon, AtSymbolIcon, CheckCircleIcon, 
     LockClosedIcon, BuildingOfficeIcon, ShieldCheckIcon, UserGroupIcon, KeyIcon,
-    GlobeAltIcon
+    GlobeAltIcon, BanknotesIcon, ArrowPathIcon
 } from '../icons/HeroIcons';
 
 interface SettingsPageProps {
@@ -31,7 +31,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   teamMembers, addTeamMember, updateTeamMember, deleteTeamMember,
   landlords, updateLandlord
 }) => {
-  const [activeTab, setActiveTab] = useState<'profile' | 'company' | 'team' | 'portal' | 'security' | 'integrations' | 'portals'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'company' | 'team' | 'portal' | 'banking' | 'security' | 'integrations' | 'portals'>('profile');
   
   // Profile State
   const [profileForm, setProfileForm] = useState(userProfile);
@@ -50,6 +50,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   // Portal State (Mock)
   const [rightmoveEnabled, setRightmoveEnabled] = useState(false);
   const [zooplaEnabled, setZooplaEnabled] = useState(false);
+
+  // Banking State
+  const [isConnectingStripe, setIsConnectingStripe] = useState(false);
 
   // --- Handlers ---
 
@@ -106,6 +109,21 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       }, 1000);
   };
 
+  const handleConnectStripe = () => {
+      setIsConnectingStripe(true);
+      // Simulate OAuth Flow
+      setTimeout(() => {
+          updateUserProfile({ 
+              ...userProfile, 
+              stripeConnectId: 'acct_1234567890', 
+              stripePayoutsEnabled: true,
+              stripeDataFeedEnabled: true 
+          });
+          setIsConnectingStripe(false);
+          alert("Stripe account connected successfully. Banking feeds active.");
+      }, 2000);
+  }
+
   // --- Sub-Components ---
 
   const TeamMemberModal = () => (
@@ -136,6 +154,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       { id: 'company', label: 'Company Details', icon: BuildingOfficeIcon },
       { id: 'team', label: 'Team Management', icon: UserPlusIcon },
       { id: 'portal', label: 'Client Portal', icon: ShieldCheckIcon },
+      { id: 'banking', label: 'Banking & Payouts', icon: BanknotesIcon },
       { id: 'portals', label: 'Portals', icon: GlobeAltIcon },
       { id: 'security', label: 'Security', icon: LockClosedIcon },
       { id: 'integrations', label: 'Integrations', icon: AtSymbolIcon },
@@ -206,6 +225,81 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                           <Button onClick={handleProfileSave}>Update Company Details</Button>
                       </div>
                   </div>
+              </div>
+          )}
+
+          {/* Banking & Payouts Tab */}
+          {activeTab === 'banking' && (
+              <div className="bg-white p-6 rounded-lg border border-zinc-200 shadow-sm max-w-2xl">
+                  <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-zinc-900">Stripe Connect Integration</h3>
+                      <p className="text-sm text-zinc-500 mt-1">
+                          Link your bank account to enable direct rent collection, automated payouts, and live financial data feeds via Stripe Treasury & Financial Connections.
+                      </p>
+                  </div>
+
+                  {!userProfile.stripeConnectId ? (
+                      <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-6 text-center">
+                          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                              <BanknotesIcon className="w-6 h-6 text-indigo-600" />
+                          </div>
+                          <h4 className="font-bold text-indigo-900 mb-2">Get Paid Directly</h4>
+                          <p className="text-sm text-indigo-700 mb-6 max-w-sm mx-auto">
+                              Connect your existing bank account. Tenants pay rent via Doorap, and funds settle directly into your account. Plus, see your bank feed live in the dashboard.
+                          </p>
+                          <Button 
+                            onClick={handleConnectStripe} 
+                            isLoading={isConnectingStripe}
+                            className="bg-[#635bff] hover:bg-[#5851e2] text-white border-none shadow-md"
+                          >
+                              Connect with Stripe
+                          </Button>
+                      </div>
+                  ) : (
+                      <div className="space-y-6">
+                          <div className="flex items-center p-4 bg-green-50 border border-green-200 rounded-lg">
+                              <div className="p-2 bg-green-100 rounded-full mr-4">
+                                  <CheckCircleIcon className="w-6 h-6 text-green-600" />
+                              </div>
+                              <div>
+                                  <h4 className="font-bold text-green-900">Account Connected</h4>
+                                  <p className="text-xs text-green-700">Stripe ID: {userProfile.stripeConnectId}</p>
+                              </div>
+                              <div className="ml-auto">
+                                  <span className="px-3 py-1 bg-white text-green-700 text-xs font-bold rounded-full border border-green-200 shadow-sm">Active</span>
+                              </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                              <div className="p-4 border border-zinc-200 rounded-lg bg-zinc-50">
+                                  <p className="text-xs text-zinc-500 uppercase font-bold mb-1">Payouts</p>
+                                  <p className="text-zinc-900 font-medium flex items-center">
+                                      <CheckCircleIcon className="w-4 h-4 text-green-500 mr-2" /> Enabled
+                                  </p>
+                              </div>
+                              <div className="p-4 border border-zinc-200 rounded-lg bg-zinc-50">
+                                  <p className="text-xs text-zinc-500 uppercase font-bold mb-1">Data Feed</p>
+                                  <p className="text-zinc-900 font-medium flex items-center">
+                                      <ArrowPathIcon className="w-4 h-4 text-blue-500 mr-2" /> Live Sync
+                                  </p>
+                              </div>
+                          </div>
+
+                          <div className="pt-4 border-t border-zinc-100">
+                              <h4 className="font-semibold text-zinc-900 mb-3">Linked Bank Account</h4>
+                              <div className="flex items-center justify-between p-3 border border-zinc-200 rounded-md">
+                                  <div className="flex items-center">
+                                      <div className="w-10 h-10 bg-zinc-100 rounded flex items-center justify-center mr-3 font-bold text-zinc-500 text-xs">BANK</div>
+                                      <div>
+                                          <p className="text-sm font-medium text-zinc-900">Barclays Business</p>
+                                          <p className="text-xs text-zinc-500">**** 4492</p>
+                                      </div>
+                                  </div>
+                                  <Button size="sm" variant="outline">Update</Button>
+                              </div>
+                          </div>
+                      </div>
+                  )}
               </div>
           )}
 

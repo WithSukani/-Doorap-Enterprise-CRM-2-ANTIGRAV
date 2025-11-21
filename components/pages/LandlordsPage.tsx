@@ -13,7 +13,8 @@ import {
     BuildingOffice2Icon, BanknotesIcon, EyeIcon, ClockIcon, BriefcaseIcon,
     PhoneIcon, EnvelopeIcon, MapPinIcon, ArrowTrendingUpIcon, 
     DocumentTextIcon, ArrowDownLeftIcon, SparklesIcon, CurrencyDollarIconSolid,
-    CloudArrowUpIcon, ClipboardDocumentCheckIcon, ReceiptPercentIcon, AtSymbolIcon
+    CloudArrowUpIcon, ClipboardDocumentCheckIcon, ReceiptPercentIcon, AtSymbolIcon,
+    ArchiveBoxArrowDownIcon, ArrowUturnLeftIcon
 } from '../icons/HeroIcons';
 import DocumentSection from '../features/DocumentSection';
 import CommunicationLogSection from '../features/CommunicationLogSection';
@@ -36,16 +37,21 @@ interface LandlordCardProps {
     properties: Property[];
     pendingApprovalsCount: number;
     onClick: () => void;
+    onArchive: (l: Landlord) => void;
+    onRestore: (l: Landlord) => void;
 }
 
-const LandlordCard: React.FC<LandlordCardProps> = ({ landlord, properties, pendingApprovalsCount, onClick }) => {
+const LandlordCard: React.FC<LandlordCardProps> = ({ landlord, properties, pendingApprovalsCount, onClick, onArchive, onRestore }) => {
     const landlordProperties = properties.filter(p => p.ownerName === landlord.name);
     const totalValue = landlordProperties.reduce((sum, p) => sum + (p.value || 0), 0);
     
     const financialHealthColor = pendingApprovalsCount > 0 ? 'border-orange-400 ring-1 ring-orange-100' : 'border-zinc-200';
 
     return (
-        <div onClick={onClick} className={`bg-white rounded-lg border ${financialHealthColor} shadow-sm hover:shadow-md transition-all cursor-pointer p-5 flex flex-col`}>
+        <div onClick={onClick} className={`bg-white rounded-lg border ${financialHealthColor} shadow-sm hover:shadow-md transition-all cursor-pointer p-5 flex flex-col group relative ${landlord.isArchived ? 'opacity-70 grayscale' : ''}`}>
+            {landlord.isArchived && (
+                <div className="absolute top-2 right-2 px-2 py-0.5 bg-zinc-100 text-zinc-500 text-[10px] font-bold rounded-full border border-zinc-200">Archived</div>
+            )}
             <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center">
                     <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600 font-bold text-sm mr-3">
@@ -59,7 +65,7 @@ const LandlordCard: React.FC<LandlordCardProps> = ({ landlord, properties, pendi
                         </div>
                     </div>
                 </div>
-                {pendingApprovalsCount > 0 && (
+                {pendingApprovalsCount > 0 && !landlord.isArchived && (
                     <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-bold rounded-full">
                         {pendingApprovalsCount} Approval{pendingApprovalsCount > 1 ? 's' : ''}
                     </span>
@@ -83,6 +89,25 @@ const LandlordCard: React.FC<LandlordCardProps> = ({ landlord, properties, pendi
             
             <div className="mt-auto pt-2 flex justify-between items-center text-xs text-zinc-400">
                 <span>Last interaction: {new Date(landlord.lastInteractionDate).toLocaleDateString()}</span>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    {landlord.isArchived ? (
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); onRestore(landlord); }} 
+                            className="text-green-600 hover:text-green-800 p-1" 
+                            title="Restore"
+                        >
+                            <ArrowUturnLeftIcon className="w-4 h-4" />
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); onArchive(landlord); }} 
+                            className="text-zinc-400 hover:text-zinc-600 p-1" 
+                            title="Archive"
+                        >
+                            <ArchiveBoxArrowDownIcon className="w-4 h-4" />
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -523,6 +548,7 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
     const [filterTime, setFilterTime] = useState('all');
     const [filterProperty, setFilterProperty] = useState('all');
     const [filterTenant, setFilterTenant] = useState('all');
+    const [viewArchived, setViewArchived] = useState(false);
 
     // Modals State
     const [isYieldModalOpen, setIsYieldModalOpen] = useState(false);
@@ -535,6 +561,11 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
         { name: 'Monthly Statements', count: 12 },
         { name: 'Property Documents', count: 5 },
     ]);
+
+    // --- MOVED HOOK HERE ---
+    const filteredLandlords = useMemo(() => {
+        return landlords.filter(l => viewArchived ? l.isArchived : !l.isArchived);
+    }, [landlords, viewArchived]);
 
     const getLandlordProperties = (landlordName: string) => properties.filter(p => p.ownerName === landlordName);
     
@@ -573,8 +604,18 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
     const handleCreateFolder = (name: string) => {
         setFolders(prev => [...prev, { name, count: 0 }]);
     }
+    
+    const handleArchiveLandlord = (landlord: Landlord) => {
+        if (window.confirm(`Archive client ${landlord.name}?`)) {
+            updateLandlord({ ...landlord, isArchived: true, status: 'Inactive' });
+        }
+    }
 
-    const bulkEmailRecipients = landlords.map(l => ({ id: l.id, name: l.name, email: l.email }));
+    const handleRestoreLandlord = (landlord: Landlord) => {
+        updateLandlord({ ...landlord, isArchived: false, status: 'Active' });
+    }
+
+    const bulkEmailRecipients = landlords.filter(l => !l.isArchived).map(l => ({ id: l.id, name: l.name, email: l.email }));
 
     if (activeLandlord) {
         const landlordProperties = getLandlordProperties(activeLandlord.name);
@@ -1017,24 +1058,50 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
             />
 
             {/* Filters Mock */}
-            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-                <button className="px-4 py-1.5 rounded-full bg-zinc-900 text-white text-sm font-medium">All Clients</button>
-                <button className="px-4 py-1.5 rounded-full bg-white border border-zinc-200 text-zinc-600 text-sm font-medium hover:bg-zinc-50">Action Required</button>
-                <button className="px-4 py-1.5 rounded-full bg-white border border-zinc-200 text-zinc-600 text-sm font-medium hover:bg-zinc-50">High Value</button>
-                <button className="px-4 py-1.5 rounded-full bg-white border border-zinc-200 text-zinc-600 text-sm font-medium hover:bg-zinc-50">At Risk</button>
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+                <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
+                    <button className="px-4 py-1.5 rounded-full bg-zinc-900 text-white text-sm font-medium">All Clients</button>
+                    <button className="px-4 py-1.5 rounded-full bg-white border border-zinc-200 text-zinc-600 text-sm font-medium hover:bg-zinc-50">Action Required</button>
+                    <button className="px-4 py-1.5 rounded-full bg-white border border-zinc-200 text-zinc-600 text-sm font-medium hover:bg-zinc-50">High Value</button>
+                    <button className="px-4 py-1.5 rounded-full bg-white border border-zinc-200 text-zinc-600 text-sm font-medium hover:bg-zinc-50">At Risk</button>
+                </div>
+                <div className="flex bg-zinc-100 p-1 rounded-lg border border-zinc-200 flex-shrink-0">
+                    <button 
+                        onClick={() => setViewArchived(false)}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${!viewArchived ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
+                    >
+                        Active
+                    </button>
+                    <button 
+                        onClick={() => setViewArchived(true)}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewArchived ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
+                    >
+                        Archived
+                    </button>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {landlords.map(landlord => (
-                    <LandlordCard 
-                        key={landlord.id}
-                        landlord={landlord}
-                        properties={properties}
-                        pendingApprovalsCount={approvalRequests.filter(r => r.landlordId === landlord.id && r.status === 'Sent').length}
-                        onClick={() => { setActiveLandlord(landlord); setActiveTab('dashboard'); }}
-                    />
-                ))}
-            </div>
+            {filteredLandlords.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {filteredLandlords.map(landlord => (
+                        <LandlordCard 
+                            key={landlord.id}
+                            landlord={landlord}
+                            properties={properties}
+                            pendingApprovalsCount={approvalRequests.filter(r => r.landlordId === landlord.id && r.status === 'Sent').length}
+                            onClick={() => { setActiveLandlord(landlord); setActiveTab('dashboard'); }}
+                            onArchive={handleArchiveLandlord}
+                            onRestore={handleRestoreLandlord}
+                        />
+                    ))}
+                </div>
+            ) : (
+                <div className="text-center py-16 bg-white rounded-lg border border-dashed border-zinc-200">
+                    <UserGroupIcon className="w-16 h-16 mx-auto text-zinc-300 mb-4"/>
+                    <h3 className="text-lg font-semibold text-zinc-900">No {viewArchived ? 'archived' : ''} clients found</h3>
+                    <p className="text-sm text-zinc-500 mb-6">{viewArchived ? "You haven't archived any clients yet." : "Add your first landlord to get started."}</p>
+                </div>
+            )}
 
             {isBulkEmailOpen && (
                 <BulkEmailModal 

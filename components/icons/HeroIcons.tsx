@@ -5,10 +5,18 @@ export interface IconProps extends React.SVGProps<SVGSVGElement> {
   className?: string;
 }
 
-// Custom Dori Icon: A stylized 'D' shaped robot girl face
+// ... (existing DoriIcon and others) ...
 export const DoriIcon = (props: IconProps) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}>
     <path d="M12 2a1 1 0 0 1 1 1v2.05a9.003 9.003 0 0 1 2.79.902l.656-.656a1 1 0 1 1 1.414 1.414l-.656.656A8.96 8.96 0 0 1 19 12c0 4.97-4.03 9-9 9H9a1 1 0 0 1-1-1v-1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h3V3a1 1 0 0 1 1-1Zm-2 5H6v10h4a1 1 0 0 1 1 1v1h3.5c2.485 0 4.5-2.015 4.5-4.5S16.985 8 14.5 8h-4.5ZM9 3h6v2H9V3Zm2.5 8a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm5 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z" />
+  </svg>
+);
+
+// ... other existing icons ...
+
+export const ArchiveBoxArrowDownIcon = (props: IconProps) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5m8.25 3.75h3.75M12 15.75h3.75M12 7.5v8.25M3.75 7.5h16.5M4.5 3h15M5.25 3v4.5m13.5-4.5v4.5M9 3v4.5M15 3v4.5" />
   </svg>
 );
 
@@ -139,7 +147,6 @@ export const GlobeAltIcon = (props: IconProps) => (
   </svg>
 );
 
-// ... other icons ...
 export const CurrencyDollarIconSolid = (props: IconProps) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}>
     <path d="M10.464 8.746c.227-.18.497-.311.786-.394v2.795a2.252 2.252 0 0 1-.786-.393c-.394-.313-.546-.681-.546-1.004 0-.324.152-.691.546-1.004ZM12.75 15.662v-2.824c.347.085.664.228.921.421.427.326.579.687.579.991 0 .305-.152.667-.579.991a2.254 2.254 0 0 1-.921.421Z" />

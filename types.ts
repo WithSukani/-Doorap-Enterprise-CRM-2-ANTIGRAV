@@ -141,6 +141,7 @@ export interface Property {
   customFieldValues?: Record<string, any>;
   managementFeeType?: 'Percentage' | 'Fixed';
   managementFeeValue?: number;
+  isArchived?: boolean;
 }
 
 export interface Tenant {
@@ -158,6 +159,7 @@ export interface Tenant {
   notes?: string;
   avatarUrl?: string;
   customFieldValues?: Record<string, any>;
+  isArchived?: boolean;
 }
 
 export interface MaintenanceRequest {
@@ -244,6 +246,9 @@ export interface UserProfile {
   email: string;
   avatarUrl?: string;
   phone?: string;
+  stripeConnectId?: string; // New: For Stripe Connect Integration
+  stripeDataFeedEnabled?: boolean; // New
+  stripePayoutsEnabled?: boolean; // New
 }
 
 export type NotificationParentType = 'reminder' | 'maintenance_request' | 'tenant' | 'document' | 'task' | 'inspection' | 'general';
@@ -390,6 +395,8 @@ export interface Landlord {
   sentiment: 'Happy' | 'Neutral' | 'Unhappy';
   lastInteractionDate: string; // ISO
   notes?: string;
+  isArchived?: boolean;
+  stripeConnectId?: string; // New: Connected Account ID
 }
 
 export interface ApprovalRequest {

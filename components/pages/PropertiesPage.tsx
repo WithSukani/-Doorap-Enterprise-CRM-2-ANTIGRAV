@@ -4,7 +4,7 @@ import { Property, Tenant, MaintenanceRequest, Document, CommunicationLog, Docum
 import PageHeader from '../PageHeader';
 import Button from '../common/Button';
 import PropertyForm from '../forms/PropertyForm';
-import { PlusCircleIcon, PencilIcon, TrashIcon, MapPinIcon, BuildingOffice2Icon } from '../icons/HeroIcons'; 
+import { PlusCircleIcon, PencilIcon, TrashIcon, MapPinIcon, BuildingOffice2Icon, ArchiveBoxArrowDownIcon, ArrowUturnLeftIcon } from '../icons/HeroIcons'; 
 import PropertyDetailsModal from '../modals/PropertyDetailsModal';
 import MarketAnalysisModal from '../modals/MarketAnalysisModal';
 
@@ -13,11 +13,13 @@ interface PropertyCardProps {
   onEdit: (property: Property) => void;
   onDelete: (propertyId: string) => void;
   onViewDetails: (property: Property) => void;
+  onArchive: (property: Property) => void;
+  onRestore: (property: Property) => void;
 }
 
-const PropertyCard: React.FC<PropertyCardProps> = ({ property, onEdit, onDelete, onViewDetails }) => {
+const PropertyCard: React.FC<PropertyCardProps> = ({ property, onEdit, onDelete, onViewDetails, onArchive, onRestore }) => {
   return (
-    <div className="group bg-white rounded-lg border border-zinc-200 overflow-hidden flex flex-col h-full hover:border-zinc-300 transition-colors">
+    <div className={`group bg-white rounded-lg border border-zinc-200 overflow-hidden flex flex-col h-full hover:border-zinc-300 transition-colors ${property.isArchived ? 'opacity-75 grayscale' : ''}`}>
       <div className="relative h-48 bg-zinc-100 overflow-hidden border-b border-zinc-100">
         <img 
             src={property.imageUrl || 'https://picsum.photos/600/400'} 
@@ -25,8 +27,8 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onEdit, onDelete,
             className="w-full h-full object-cover opacity-95" 
         />
         <div className="absolute top-3 right-3">
-            <span className="px-2.5 py-1 bg-white/90 backdrop-blur text-xs font-semibold text-zinc-800 rounded-md shadow-sm border border-zinc-200/50">
-                {property.type}
+            <span className={`px-2.5 py-1 text-xs font-semibold rounded-md shadow-sm border backdrop-blur ${property.isArchived ? 'bg-zinc-100 text-zinc-500 border-zinc-200' : 'bg-white/90 text-zinc-800 border-zinc-200/50'}`}>
+                {property.isArchived ? 'Archived' : property.type}
             </span>
         </div>
       </div>
@@ -53,7 +55,18 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onEdit, onDelete,
 
         <div className="flex gap-2 pt-2 mt-auto">
           <Button size="sm" variant="secondary" onClick={() => onViewDetails(property)} className="flex-1 justify-center">Details</Button>
-          <Button size="sm" variant="outline" onClick={() => onEdit(property)} className="px-2.5"><PencilIcon className="w-4 h-4"/></Button>
+          {property.isArchived ? (
+              <Button size="sm" variant="outline" onClick={() => onRestore(property)} className="px-2.5 text-green-600 hover:text-green-700 hover:border-green-200" title="Restore">
+                  <ArrowUturnLeftIcon className="w-4 h-4"/>
+              </Button>
+          ) : (
+              <>
+                <Button size="sm" variant="outline" onClick={() => onEdit(property)} className="px-2.5"><PencilIcon className="w-4 h-4"/></Button>
+                <Button size="sm" variant="outline" onClick={() => onArchive(property)} className="px-2.5 text-zinc-500 hover:text-zinc-700" title="Archive">
+                    <ArchiveBoxArrowDownIcon className="w-4 h-4"/>
+                </Button>
+              </>
+          )}
           <Button size="sm" variant="outline" onClick={() => onDelete(property.id)} className="text-red-600 hover:text-red-700 hover:border-red-200 px-2.5"><TrashIcon className="w-4 h-4"/></Button>
         </div>
       </div>
@@ -93,6 +106,7 @@ const PropertiesPage: React.FC<PropertiesPageProps> = ({
   const [viewingProperty, setViewingProperty] = useState<Property | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [analyzingProperty, setAnalyzingProperty] = useState<Property | null>(null);
+  const [viewArchived, setViewArchived] = useState(false);
 
   const handleAddProperty = () => {
     setEditingProperty(null);
@@ -108,6 +122,16 @@ const PropertiesPage: React.FC<PropertiesPageProps> = ({
     if (window.confirm('Delete this property and all associated data?')) {
       deleteProperty(propertyId);
     }
+  };
+  
+  const handleArchiveProperty = (property: Property) => {
+      if (window.confirm(`Are you sure you want to archive ${property.address}? It will be moved to the Archive folder.`)) {
+          updateProperty({ ...property, isArchived: true });
+      }
+  };
+
+  const handleRestoreProperty = (property: Property) => {
+      updateProperty({ ...property, isArchived: false });
   };
   
   const handleViewDetails = (property: Property) => {
@@ -128,12 +152,17 @@ const PropertiesPage: React.FC<PropertiesPageProps> = ({
     setAnalyzingProperty(property);
   };
 
-  const filteredProperties = properties.filter(p => 
-    p.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.postcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.ownerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.type.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProperties = properties.filter(p => {
+    const matchesSearch = 
+        p.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.postcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.ownerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.type.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesArchive = viewArchived ? p.isArchived : !p.isArchived;
+    
+    return matchesSearch && matchesArchive;
+  });
 
 
   return (
@@ -146,7 +175,7 @@ const PropertiesPage: React.FC<PropertiesPageProps> = ({
           </Button>
         }
       />
-       <div className="mb-8">
+       <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <input
           type="text"
           placeholder="Search properties..."
@@ -154,6 +183,20 @@ const PropertiesPage: React.FC<PropertiesPageProps> = ({
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+        <div className="flex bg-zinc-100 p-1 rounded-lg border border-zinc-200">
+            <button 
+                onClick={() => setViewArchived(false)}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${!viewArchived ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
+            >
+                Active
+            </button>
+            <button 
+                onClick={() => setViewArchived(true)}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewArchived ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
+            >
+                Archived
+            </button>
+        </div>
       </div>
 
       {filteredProperties.length > 0 ? (
@@ -165,6 +208,8 @@ const PropertiesPage: React.FC<PropertiesPageProps> = ({
               onEdit={handleEditProperty} 
               onDelete={handleDeleteProperty}
               onViewDetails={handleViewDetails}
+              onArchive={handleArchiveProperty}
+              onRestore={handleRestoreProperty}
             />
           ))}
         </div>
@@ -173,11 +218,15 @@ const PropertiesPage: React.FC<PropertiesPageProps> = ({
             <div className="bg-zinc-50 p-4 rounded-full inline-block mb-4">
                 <BuildingOffice2Icon className="w-8 h-8 text-zinc-400"/>
             </div>
-            <h3 className="text-lg font-semibold text-zinc-900 mb-1">No properties found</h3>
-            <p className="text-sm text-zinc-500 mb-6">Get started by adding your first property to the portfolio.</p>
-            <Button onClick={handleAddProperty} variant="outline" leftIcon={<PlusCircleIcon className="w-4 h-4"/>}>
-                Add Property
-            </Button>
+            <h3 className="text-lg font-semibold text-zinc-900 mb-1">No {viewArchived ? 'archived' : ''} properties found</h3>
+            <p className="text-sm text-zinc-500 mb-6">
+                {viewArchived ? "You haven't archived any properties yet." : "Get started by adding your first property to the portfolio."}
+            </p>
+            {!viewArchived && (
+                <Button onClick={handleAddProperty} variant="outline" leftIcon={<PlusCircleIcon className="w-4 h-4"/>}>
+                    Add Property
+                </Button>
+            )}
         </div>
       )}
 

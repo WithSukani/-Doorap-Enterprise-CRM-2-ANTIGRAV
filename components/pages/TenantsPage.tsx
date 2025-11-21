@@ -8,7 +8,7 @@ import AddTenantWizard from '../wizards/AddTenantWizard';
 import TenantDetailsModal from '../modals/TenantDetailsModal';
 import TenancyWorkflowModal from '../modals/TenancyWorkflowModal';
 import BulkEmailModal from '../modals/BulkEmailModal';
-import { PlusCircleIcon, PencilIcon, TrashIcon, EyeIcon, ChatBubbleLeftEllipsisIcon, TableCellsIcon, MapPinIcon, PhoneIcon, EnvelopeIcon, ArrowRightStartOnRectangleIcon, ArrowLeftEndOnRectangleIcon, AtSymbolIcon } from '../icons/HeroIcons';
+import { PlusCircleIcon, PencilIcon, TrashIcon, EyeIcon, ChatBubbleLeftEllipsisIcon, TableCellsIcon, MapPinIcon, PhoneIcon, EnvelopeIcon, ArrowRightStartOnRectangleIcon, ArrowLeftEndOnRectangleIcon, AtSymbolIcon, ArchiveBoxArrowDownIcon, ArrowUturnLeftIcon } from '../icons/HeroIcons';
 
 interface TenantsPageProps {
     tenants: Tenant[];
@@ -53,6 +53,7 @@ const TenantsPage: React.FC<TenantsPageProps> = ({
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPropertyId, setFilterPropertyId] = useState('');
+  const [viewArchived, setViewArchived] = useState(false);
 
   const handleAddTenant = () => setIsWizardOpen(true);
   const handleEditTenant = (tenant: Tenant) => { setEditingTenant(tenant); setIsFormOpen(true); };
@@ -61,6 +62,15 @@ const TenantsPage: React.FC<TenantsPageProps> = ({
       deleteTenant(tenantId);
     }
   };
+  const handleArchiveTenant = (tenant: Tenant) => {
+      if (window.confirm(`Archive ${tenant.name}? They will be moved to the Archive folder.`)) {
+          updateTenant({ ...tenant, isArchived: true });
+      }
+  }
+  const handleRestoreTenant = (tenant: Tenant) => {
+      updateTenant({ ...tenant, isArchived: false });
+  }
+
   const handleViewDetails = (tenant: Tenant) => setViewingTenant(tenant);
   
   const handleWizardSubmit = (tenantData: Tenant) => { 
@@ -100,7 +110,8 @@ const TenantsPage: React.FC<TenantsPageProps> = ({
                               t.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                               getPropertyName(t.propertyId).toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPropertyFilter = filterPropertyId ? t.propertyId === filterPropertyId : true;
-    return matchesSearchTerm && matchesPropertyFilter;
+    const matchesArchive = viewArchived ? t.isArchived : !t.isArchived;
+    return matchesSearchTerm && matchesPropertyFilter && matchesArchive;
   });
   
   const propertyOptions = [{ value: '', label: 'All Properties' }, ...properties.map(p => ({ value: p.id, label: `${p.address}` }))];
@@ -111,10 +122,10 @@ const TenantsPage: React.FC<TenantsPageProps> = ({
     <div className="animate-fade-in">
       <PageHeader 
         title="Tenants" 
-        subtitle={`Manage your ${tenants.length} active tenants.`}
+        subtitle={`Manage your ${tenants.filter(t => !t.isArchived).length} active tenants.`}
         actions={
           <div className="flex gap-2">
-              {emailSettings?.isActive && (
+              {emailSettings?.isActive && !viewArchived && (
                   <Button variant="secondary" onClick={() => setIsBulkEmailOpen(true)} leftIcon={<AtSymbolIcon className="w-5 h-5"/>}>
                       Bulk Email
                   </Button>
@@ -127,8 +138,8 @@ const TenantsPage: React.FC<TenantsPageProps> = ({
       />
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-lg border border-zinc-200 shadow-sm mb-6 flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
+      <div className="bg-white p-4 rounded-lg border border-zinc-200 shadow-sm mb-6 flex flex-col sm:flex-row gap-4 justify-between">
+        <div className="flex-1 flex gap-4">
             <input
                 type="text"
                 placeholder="Search tenants..."
@@ -136,15 +147,29 @@ const TenantsPage: React.FC<TenantsPageProps> = ({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
             />
+            <div className="w-full sm:w-64">
+                <select
+                    className="w-full px-4 py-2 border border-zinc-200 rounded-md text-sm focus:ring-2 focus:ring-zinc-900 outline-none bg-white"
+                    value={filterPropertyId}
+                    onChange={(e) => setFilterPropertyId(e.target.value)}
+                >
+                    {propertyOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
+            </div>
         </div>
-        <div className="w-full sm:w-64">
-            <select
-                className="w-full px-4 py-2 border border-zinc-200 rounded-md text-sm focus:ring-2 focus:ring-zinc-900 outline-none bg-white"
-                value={filterPropertyId}
-                onChange={(e) => setFilterPropertyId(e.target.value)}
+        <div className="flex bg-zinc-100 p-1 rounded-lg border border-zinc-200 flex-shrink-0">
+            <button 
+                onClick={() => setViewArchived(false)}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${!viewArchived ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
             >
-                {propertyOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-            </select>
+                Active
+            </button>
+            <button 
+                onClick={() => setViewArchived(true)}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewArchived ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
+            >
+                Archived
+            </button>
         </div>
       </div>
 
@@ -169,7 +194,7 @@ const TenantsPage: React.FC<TenantsPageProps> = ({
                         const isLeaseEnding = tenant.leaseEndDate && new Date(tenant.leaseEndDate) < new Date(new Date().setDate(new Date().getDate() + 60));
                         
                         return (
-                            <tr key={tenant.id} className="hover:bg-zinc-50 transition-colors group">
+                            <tr key={tenant.id} className={`hover:bg-zinc-50 transition-colors group ${tenant.isArchived ? 'opacity-60 grayscale' : ''}`}>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center">
                                         <div className="h-8 w-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm mr-3">
@@ -201,7 +226,9 @@ const TenantsPage: React.FC<TenantsPageProps> = ({
                                     £{tenant.rentAmount?.toLocaleString() || '0'}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                                    {isLeaseEnding ? (
+                                    {tenant.isArchived ? (
+                                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-zinc-100 text-zinc-600">Archived</span>
+                                    ) : isLeaseEnding ? (
                                         <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Expiring Soon</span>
                                     ) : (
                                         <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
@@ -209,10 +236,21 @@ const TenantsPage: React.FC<TenantsPageProps> = ({
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <div className="flex justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => handleStartWorkflow(tenant, 'Move Out')} className="text-zinc-400 hover:text-orange-600 p-1" title="Start Move Out"><ArrowRightStartOnRectangleIcon className="w-4 h-4"/></button>
-                                        <button onClick={() => onStartChat(tenant)} className="text-indigo-600 hover:text-indigo-900 p-1" title="Chat"><ChatBubbleLeftEllipsisIcon className="w-4 h-4"/></button>
+                                        {!tenant.isArchived && (
+                                            <>
+                                            <button onClick={() => handleStartWorkflow(tenant, 'Move Out')} className="text-zinc-400 hover:text-orange-600 p-1" title="Start Move Out"><ArrowRightStartOnRectangleIcon className="w-4 h-4"/></button>
+                                            <button onClick={() => onStartChat(tenant)} className="text-indigo-600 hover:text-indigo-900 p-1" title="Chat"><ChatBubbleLeftEllipsisIcon className="w-4 h-4"/></button>
+                                            </>
+                                        )}
                                         <button onClick={() => handleViewDetails(tenant)} className="text-zinc-400 hover:text-zinc-600 p-1" title="View Details"><EyeIcon className="w-4 h-4"/></button>
-                                        <button onClick={() => handleEditTenant(tenant)} className="text-zinc-400 hover:text-zinc-600 p-1" title="Edit"><PencilIcon className="w-4 h-4"/></button>
+                                        {!tenant.isArchived ? (
+                                            <>
+                                            <button onClick={() => handleEditTenant(tenant)} className="text-zinc-400 hover:text-zinc-600 p-1" title="Edit"><PencilIcon className="w-4 h-4"/></button>
+                                            <button onClick={() => handleArchiveTenant(tenant)} className="text-zinc-400 hover:text-zinc-600 p-1" title="Archive"><ArchiveBoxArrowDownIcon className="w-4 h-4"/></button>
+                                            </>
+                                        ) : (
+                                            <button onClick={() => handleRestoreTenant(tenant)} className="text-green-500 hover:text-green-700 p-1" title="Restore"><ArrowUturnLeftIcon className="w-4 h-4"/></button>
+                                        )}
                                         <button onClick={() => handleDeleteTenant(tenant.id)} className="text-red-400 hover:text-red-600 p-1" title="Delete"><TrashIcon className="w-4 h-4"/></button>
                                     </div>
                                 </td>
@@ -222,7 +260,7 @@ const TenantsPage: React.FC<TenantsPageProps> = ({
                         <tr>
                             <td colSpan={7} className="px-6 py-10 text-center text-sm text-zinc-500 bg-zinc-50/50">
                                 <TableCellsIcon className="w-10 h-10 mx-auto text-zinc-300 mb-2"/>
-                                No tenants found matching your filters.
+                                No {viewArchived ? 'archived' : 'active'} tenants found matching your filters.
                             </td>
                         </tr>
                     )}
