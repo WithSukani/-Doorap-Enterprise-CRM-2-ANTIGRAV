@@ -454,10 +454,10 @@ export interface CalendarEvent {
     title: string;
     start: string; // ISO Date string
     end?: string; // ISO Date string (optional for multi-day or timed events)
-    type: 'reminder' | 'task' | 'lease_expiry' | 'document_expiry' | 'inspection';
+    type: 'reminder' | 'task' | 'lease_expiry' | 'document_expiry' | 'inspection' | 'applicant';
     color?: string; // Optional color for event type
     link?: string; // Link to the item in the app
-    data?: Reminder | Task | Tenant | Document | Inspection; // Original data object
+    data?: Reminder | Task | Tenant | Document | Inspection | Applicant; // Original data object
 }
 
 export type CustomFieldEntityType = 'property' | 'tenant' | 'maintenance_request';

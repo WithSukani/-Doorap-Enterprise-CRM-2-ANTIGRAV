@@ -418,7 +418,20 @@ const App = () => {
     ...tasks.filter(t => t.status !== TaskStatus.COMPLETED && t.dueDate).map(t => ({ id: `task-${t.id}`, title: `Task: ${t.title}`, start: t.dueDate!, type: 'task' as 'task', color: '#8b5cf6', link: `/workflow?tab=tasks&highlight=${t.id}`, data: t })),
     ...tenants.filter(t => t.leaseEndDate).map(t => ({ id: `lease-${t.id}`, title: `Lease End: ${t.name}`, start: t.leaseEndDate!, type: 'lease_expiry' as 'lease_expiry', color: '#ec4899', link: `/tenants?highlight=${t.id}`, data: t })),
     ...documents.filter(d => d.expiryDate).map(d => ({ id: `doc-exp-${d.id}`, title: `Doc Exp: ${d.name}`, start: d.expiryDate!, type: 'document_expiry' as 'document_expiry', color: '#10b981', link: `/documents`, data: d })),
-    ...inspections.filter(i => i.status === 'Scheduled' || i.status === 'In Progress').map(i => ({ id: `insp-${i.id}`, title: `Inspection: ${i.inspectionType} for ${getPropertyById(i.propertyId)?.address}`, start: i.scheduledDate, type: 'inspection' as 'inspection', color: '#3b82f6', link: `/workflow?tab=inspections&highlight=${i.id}`, data: i }))
+    ...inspections.filter(i => i.status === 'Scheduled' || i.status === 'In Progress').map(i => ({ id: `insp-${i.id}`, title: `Inspection: ${i.inspectionType} for ${getPropertyById(i.propertyId)?.address}`, start: i.scheduledDate, type: 'inspection' as 'inspection', color: '#3b82f6', link: `/workflow?tab=inspections&highlight=${i.id}`, data: i })),
+    ...applicants.map(app => {
+        const vacancy = vacancies.find(v => v.id === app.vacancyId);
+        const prop = vacancy ? properties.find(p => p.id === vacancy.propertyId) : null;
+        return {
+            id: `app-${app.id}`,
+            title: `Applicant: ${app.name} (${prop?.address || 'Unknown'})`,
+            start: app.applicationDate,
+            type: 'applicant' as 'applicant',
+            color: '#0ea5e9', // Sky blue
+            link: `/vacancies`,
+            data: app
+        };
+    })
   ].sort((a,b) => new Date(a.start).getTime() - new Date(b.start).getTime());
 
 

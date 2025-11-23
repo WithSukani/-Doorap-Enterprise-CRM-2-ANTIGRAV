@@ -7,7 +7,7 @@ import VacancyForm from '../forms/VacancyForm';
 import ApplicantForm from '../forms/ApplicantForm';
 import Modal from '../common/Modal';
 import CommunicationLogSection from '../features/CommunicationLogSection';
-import { PlusCircleIcon, PencilIcon, TrashIcon, EyeIcon, UsersIcon, MegaphoneIcon, GlobeAltIcon, CheckCircleIcon, ExclamationTriangleIcon, ArrowPathIcon } from '../icons/HeroIcons';
+import { PlusCircleIcon, PencilIcon, TrashIcon, EyeIcon, UsersIcon, MegaphoneIcon, GlobeAltIcon, CheckCircleIcon, ExclamationTriangleIcon, ArrowPathIcon, MapPinIcon, UserPlusIcon } from '../icons/HeroIcons';
 
 interface VacancyCardProps {
   vacancy: Vacancy;
@@ -17,9 +17,10 @@ interface VacancyCardProps {
   onDelete: (vacancyId: string) => void;
   onViewDetails: (vacancy: Vacancy) => void;
   onSyncPortals: (vacancy: Vacancy) => void;
+  onAddApplicant: (vacancy: Vacancy) => void;
 }
 
-const PortalBadge = ({ name, status }: { name: string, status?: string }) => {
+const PortalBadge = ({ name, status, compact = false }: { name: string, status?: string, compact?: boolean }) => {
     const getStatusColor = (s?: string) => {
         switch(s) {
             case 'Live': return 'bg-green-100 text-green-700 border-green-200';
@@ -30,59 +31,78 @@ const PortalBadge = ({ name, status }: { name: string, status?: string }) => {
     }
     
     return (
-        <div className={`flex items-center text-[10px] px-2 py-1 rounded-md border ${getStatusColor(status)}`}>
-            <GlobeAltIcon className="w-3 h-3 mr-1"/>
-            <span className="font-medium">{name}: {status || 'Off'}</span>
+        <div className={`flex items-center rounded-md border ${getStatusColor(status)} ${compact ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-xs'}`}>
+            {!compact && <GlobeAltIcon className="w-3 h-3 mr-1"/>}
+            <span className="font-medium">{name}{!compact && `: ${status || 'Off'}`}</span>
         </div>
     )
 }
 
-const VacancyCard: React.FC<VacancyCardProps> = ({ vacancy, property, applicantCount, onEdit, onDelete, onViewDetails, onSyncPortals }) => (
-  <div className="bg-white p-5 rounded-lg shadow-lg hover:shadow-xl transition-shadow flex flex-col h-full">
-    <div className="flex-1">
-        <div className="flex justify-between items-start mb-2">
-            <h3 className="text-lg font-semibold text-neutral-dark line-clamp-1" title={vacancy.listingTitle}>{vacancy.listingTitle}</h3>
-            {vacancy.status === 'Available' ? (
-                <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-bold rounded-full">Available</span>
-            ) : (
-                <span className="px-2 py-0.5 bg-zinc-100 text-zinc-600 text-xs font-bold rounded-full">{vacancy.status}</span>
-            )}
+const VacancyCard: React.FC<VacancyCardProps> = ({ vacancy, property, applicantCount, onEdit, onDelete, onViewDetails, onSyncPortals, onAddApplicant }) => {
+  return (
+    <div className="group bg-white rounded-lg border border-zinc-200 overflow-hidden flex flex-col h-full hover:border-zinc-300 transition-colors">
+      {/* Image Header */}
+      <div className="relative h-48 bg-zinc-100 overflow-hidden border-b border-zinc-100">
+        <img 
+            src={property?.imageUrl || 'https://picsum.photos/600/400'} 
+            alt={vacancy.listingTitle} 
+            className="w-full h-full object-cover opacity-95" 
+        />
+        <div className="absolute top-3 right-3">
+            <span className={`px-2.5 py-1 text-xs font-semibold rounded-md shadow-sm border backdrop-blur ${
+                vacancy.status === 'Available' ? 'bg-green-100/90 text-green-800 border-green-200' : 'bg-zinc-100/90 text-zinc-600 border-zinc-200'
+            }`}>
+                {vacancy.status}
+            </span>
         </div>
-        {property && <p className="text-sm text-neutral-DEFAULT mb-1 flex items-center truncate"><span className="font-medium mr-1">Prop:</span> {property.address}</p>}
+      </div>
+      
+      {/* Content */}
+      <div className="p-5 flex-1 flex flex-col">
+        <h3 className="text-lg font-semibold text-zinc-900 line-clamp-1 mb-1" title={vacancy.listingTitle}>{vacancy.listingTitle}</h3>
+        <div className="flex items-center text-sm text-zinc-500 mb-4">
+            <MapPinIcon className="w-4 h-4 mr-1.5 text-zinc-400"/>
+            {property ? property.address : 'Unassigned Property'}
+        </div>
         
-        <div className="grid grid-cols-2 gap-2 my-3 text-sm">
-            <div className="bg-zinc-50 p-2 rounded border border-zinc-100">
-                <span className="block text-xs text-zinc-500">Rent</span>
-                <span className="font-medium text-green-600">£{vacancy.rentAmount.toLocaleString()}</span>
+        <div className="space-y-3 mb-6 flex-1">
+            <div className="flex justify-between items-center text-sm border-b border-zinc-50 pb-2">
+                <span className="text-zinc-500">Rent</span>
+                <span className="font-medium text-zinc-900">£{vacancy.rentAmount.toLocaleString()}/mo</span>
             </div>
-            <div className="bg-zinc-50 p-2 rounded border border-zinc-100">
-                <span className="block text-xs text-zinc-500">Applicants</span>
-                <span className="font-medium text-zinc-900">{applicantCount}</span>
+            <div className="flex justify-between items-center text-sm border-b border-zinc-50 pb-2">
+                <span className="text-zinc-500">Applicants</span>
+                <span className="font-medium text-zinc-900 flex items-center">
+                    <UsersIcon className="w-3.5 h-3.5 mr-1.5 text-zinc-400"/> {applicantCount}
+                </span>
+            </div>
+            
+            {/* Portal Status Section */}
+            <div className="pt-2">
+                <div className="flex justify-between items-center mb-2">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Portals</span>
+                    <button onClick={(e) => { e.stopPropagation(); onSyncPortals(vacancy); }} className="text-indigo-600 hover:text-indigo-800 text-xs flex items-center transition-colors">
+                        <ArrowPathIcon className="w-3 h-3 mr-1"/> Sync
+                    </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                    <PortalBadge name="RM" status={vacancy.portalStatus?.rightmove} compact />
+                    <PortalBadge name="Z" status={vacancy.portalStatus?.zoopla} compact />
+                </div>
             </div>
         </div>
 
-        {/* Portal Status Section */}
-        <div className="mb-4 space-y-1.5">
-            <div className="flex justify-between items-center">
-                <p className="text-xs font-bold text-zinc-400 uppercase">Marketplace Sync</p>
-                <button onClick={(e) => { e.stopPropagation(); onSyncPortals(vacancy); }} className="text-indigo-600 hover:text-indigo-800 text-xs flex items-center transition-colors">
-                    <ArrowPathIcon className="w-3 h-3 mr-1"/> Sync
-                </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-                <PortalBadge name="Rightmove" status={vacancy.portalStatus?.rightmove} />
-                <PortalBadge name="Zoopla" status={vacancy.portalStatus?.zoopla} />
-            </div>
+        {/* Actions */}
+        <div className="flex gap-2 pt-2 mt-auto">
+          <Button size="sm" variant="secondary" onClick={() => onViewDetails(vacancy)} className="flex-1 justify-center">Details</Button>
+          <Button size="sm" variant="outline" onClick={() => onAddApplicant(vacancy)} className="px-2.5 text-zinc-600 hover:text-indigo-600 hover:border-indigo-200" title="Add Applicant"><UserPlusIcon className="w-4 h-4"/></Button>
+          <Button size="sm" variant="outline" onClick={() => onEdit(vacancy)} className="px-2.5"><PencilIcon className="w-4 h-4"/></Button>
+          <Button size="sm" variant="outline" onClick={() => onDelete(vacancy.id)} className="text-red-600 hover:text-red-700 hover:border-red-200 px-2.5"><TrashIcon className="w-4 h-4"/></Button>
         </div>
+      </div>
     </div>
-
-    <div className="flex flex-wrap gap-2 pt-4 border-t border-zinc-100 mt-auto">
-      <Button size="sm" variant="ghost" onClick={() => onViewDetails(vacancy)} leftIcon={<EyeIcon className="w-4 h-4"/>} className="flex-1 justify-center">Details</Button>
-      <Button size="sm" variant="outline" onClick={() => onEdit(vacancy)} className="px-2"><PencilIcon className="w-4 h-4"/></Button>
-      <Button size="sm" variant="outline" onClick={() => onDelete(vacancy.id)} className="text-red-600 border-red-100 hover:bg-red-50 px-2"><TrashIcon className="w-4 h-4"/></Button>
-    </div>
-  </div>
-);
+  );
+};
 
 interface VacancyDetailsModalProps {
   vacancy: Vacancy | null;
@@ -256,6 +276,10 @@ const VacanciesPage: React.FC<VacanciesPageProps> = ({
     setEditingApplicant(null);
     setIsApplicantFormOpen(true);
   };
+  const handleAddApplicantFromCard = (vacancy: Vacancy) => {
+      handleAddApplicantToVacancy(vacancy.id);
+  }
+
   const handleEditApplicant = (applicant: Applicant) => {
     setCurrentVacancyIdForApplicant(applicant.vacancyId);
     setEditingApplicant(applicant);
@@ -295,6 +319,7 @@ const VacanciesPage: React.FC<VacanciesPageProps> = ({
               onDelete={handleDeleteVacancy}
               onViewDetails={handleViewVacancyDetails}
               onSyncPortals={handleSyncPortals}
+              onAddApplicant={handleAddApplicantFromCard}
             />
           ))}
         </div>
