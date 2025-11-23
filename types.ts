@@ -306,6 +306,28 @@ export interface Expense {
   notes?: string;
 }
 
+export interface RecurringPayment {
+    id: string;
+    type: 'Direct Debit' | 'Standing Order';
+    vendor: string;
+    reference: string;
+    amount: number;
+    frequency: 'Monthly' | 'Quarterly' | 'Annually';
+    nextDueDate: string;
+    status: 'Active' | 'Paused' | 'Review Needed';
+    propertyId?: string;
+}
+
+export interface PaymentLink {
+    id: string;
+    tenantId: string;
+    amount: number;
+    description: string;
+    status: 'Open' | 'Paid' | 'Expired';
+    createdAt: string;
+    url: string;
+}
+
 // Document Templates
 export interface DocumentTemplate {
   id: string;

@@ -2,7 +2,7 @@
 import { 
     PropertyType, MaintenanceStatus, MaintenancePriority, DocumentType, CommunicationType, NotificationType, ExpenseCategory, TaskStatus,
     DocumentParentType, CommunicationLogParentType, NotificationParentType, Landlord, ApprovalRequest, Property, MeterReading, InventoryCheck, Tenant, ChatSession,
-    DoriInteraction, DoriAction, AutomationWorkflow, EmergencyItem, DoriExecution, TeamMember
+    DoriInteraction, DoriAction, AutomationWorkflow, EmergencyItem, DoriExecution, TeamMember, RecurringPayment, PaymentLink
 } from './types';
 
 export const APP_NAME = "Doorap";
@@ -388,4 +388,14 @@ export const INITIAL_DORI_EXECUTIONS: DoriExecution[] = [
             { id: 's4', timestamp: new Date(Date.now() - 3570000).toISOString(), description: 'Sent Confirmation SMS', status: 'Completed' }
         ]
     }
+];
+
+export const INITIAL_RECURRING_PAYMENTS: RecurringPayment[] = [
+    { id: 'rec1', type: 'Direct Debit', vendor: 'British Gas', reference: 'BG-99281', amount: 45.50, frequency: 'Monthly', nextDueDate: '2023-12-01', status: 'Active', propertyId: 'prop1' },
+    { id: 'rec2', type: 'Standing Order', vendor: 'CleanCo Services', reference: 'CLN-001', amount: 80.00, frequency: 'Monthly', nextDueDate: '2023-12-05', status: 'Active', propertyId: 'prop2' },
+    { id: 'rec3', type: 'Direct Debit', vendor: 'Halifax Mortgage', reference: 'MTG-112', amount: 650.00, frequency: 'Monthly', nextDueDate: '2023-12-10', status: 'Review Needed', propertyId: 'prop1' } 
+];
+
+export const INITIAL_PAYMENT_LINKS: PaymentLink[] = [
+    { id: 'pl_1', tenantId: 'ten3', amount: 50.00, description: 'Replacement Key Fee', status: 'Open', createdAt: new Date().toISOString(), url: 'https://buy.stripe.com/test_key_fee' }
 ];

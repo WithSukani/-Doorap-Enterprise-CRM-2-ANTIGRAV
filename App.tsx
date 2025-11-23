@@ -1,18 +1,21 @@
 
+// ... existing imports ...
 import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { 
     PropertyType, MaintenanceStatus, MaintenancePriority, NotificationType, CommunicationType, TaskStatus,
     Property, Tenant, MaintenanceRequest, Reminder, SLA, UserProfile, Document, CommunicationLog, Notification as NotificationData, ChatMessage, ChatSession,
     RentPayment, Expense, DocumentTemplate, Task, Vacancy, Applicant, Inspection, InspectionChecklistItem, CalendarEvent, Landlord, ApprovalRequest, Folder,
-    MeterReading, InventoryCheck, InventoryItem, DoriInteraction, DoriAction, AutomationWorkflow, EmergencyItem, DoriExecution, TeamMember
+    MeterReading, InventoryCheck, InventoryItem, DoriInteraction, DoriAction, AutomationWorkflow, EmergencyItem, DoriExecution, TeamMember,
+    RecurringPayment, PaymentLink
 } from './types';
 import { 
     INITIAL_PROPERTIES, INITIAL_TENANTS, INITIAL_MAINTENANCE_REQUESTS, INITIAL_REMINDERS, INITIAL_SLAS, USER_PROFILE_DATA, APP_NAME, 
     INITIAL_DOCUMENTS, INITIAL_COMMUNICATION_LOGS, INITIAL_NOTIFICATIONS,
     INITIAL_RENT_PAYMENTS, INITIAL_EXPENSES, INITIAL_DOCUMENT_TEMPLATES, INITIAL_TASKS, INITIAL_VACANCIES, INITIAL_APPLICANTS,
     INITIAL_INSPECTIONS, INITIAL_INSPECTION_CHECKLIST_ITEMS, INITIAL_LANDLORDS, INITIAL_APPROVALS,
-    INITIAL_METER_READINGS, INITIAL_INVENTORY_CHECKS, INITIAL_CHAT_SESSIONS, INITIAL_DORI_LOGS, INITIAL_DORI_ACTIONS, INITIAL_WORKFLOWS, INITIAL_EMERGENCIES, INITIAL_DORI_EXECUTIONS, INITIAL_TEAM_MEMBERS
+    INITIAL_METER_READINGS, INITIAL_INVENTORY_CHECKS, INITIAL_CHAT_SESSIONS, INITIAL_DORI_LOGS, INITIAL_DORI_ACTIONS, INITIAL_WORKFLOWS, INITIAL_EMERGENCIES, INITIAL_DORI_EXECUTIONS, INITIAL_TEAM_MEMBERS,
+    INITIAL_RECURRING_PAYMENTS, INITIAL_PAYMENT_LINKS
 } from './constants';
 import Sidebar from './components/Sidebar';
 import DashboardPage from './components/pages/DashboardPage';
@@ -89,6 +92,10 @@ const App = () => {
   const [emailSettings, setEmailSettings] = useLocalStorage<any>('crm_email_settings', null);
   const [teamMembers, setTeamMembers] = useLocalStorage<TeamMember[]>('crm_team_members', INITIAL_TEAM_MEMBERS);
   
+  // Financial Advanced
+  const [recurringPayments, setRecurringPayments] = useLocalStorage<RecurringPayment[]>('crm_recurring_payments', INITIAL_RECURRING_PAYMENTS);
+  const [paymentLinks, setPaymentLinks] = useLocalStorage<PaymentLink[]>('crm_payment_links', INITIAL_PAYMENT_LINKS);
+
   // Dori State
   const [doriInteractions, setDoriInteractions] = useLocalStorage<DoriInteraction[]>('crm_dori_interactions', INITIAL_DORI_LOGS);
   const [doriActions, setDoriActions] = useLocalStorage<DoriAction[]>('crm_dori_actions', INITIAL_DORI_ACTIONS);
@@ -350,6 +357,10 @@ const App = () => {
   const deleteWorkflow = (id: string) => setAutomationWorkflows(prev => prev.filter(w => w.id !== id));
   const updateEmergency = (item: EmergencyItem) => setEmergencies(prev => prev.map(e => e.id === item.id ? item : e));
 
+  // Financial Advanced
+  const addRecurringPayment = (payment: RecurringPayment) => setRecurringPayments(prev => [...prev, payment]);
+  const addPaymentLink = (link: PaymentLink) => setPaymentLinks(prev => [...prev, link]);
+
 
   const handleSendMessage = (chatId: string, text: string, senderType: 'user' | 'support_admin' | 'tenant_simulated' | string) => {
     const newMessage: ChatMessage = {
@@ -517,6 +528,9 @@ const App = () => {
                     rentPayments={rentPayments} addRentPayment={addRentPayment} updateRentPayment={updateRentPayment} deleteRentPayment={deleteRentPayment}
                     expenses={expenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense}
                     properties={properties} tenants={tenants} landlords={landlords}
+                    recurringPayments={recurringPayments} addRecurringPayment={addRecurringPayment}
+                    paymentLinks={paymentLinks} addPaymentLink={addPaymentLink}
+                    addApprovalRequest={addApprovalRequest}
                 />} 
             />
             <Route path="/workflow" element={<WorkflowPage
