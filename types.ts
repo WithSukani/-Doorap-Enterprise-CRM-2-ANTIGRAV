@@ -284,6 +284,16 @@ export interface ChatSession {
 // --- NEW TYPES ---
 
 // Financials
+export interface BankAccount {
+    id: string;
+    name: string;
+    last4: string;
+    balance: number;
+    currency: string;
+    status: 'Active' | 'Inactive';
+    type: 'Checking' | 'Savings';
+}
+
 export interface RentPayment {
   id: string;
   tenantId: string;
@@ -292,6 +302,7 @@ export interface RentPayment {
   amount: number;
   paymentMethod: string; // e.g., 'Bank Transfer', 'Cash', 'Card'
   notes?: string;
+  bankAccountId?: string; // Linked bank account for ledger
 }
 
 export interface Expense {
@@ -304,6 +315,7 @@ export interface Expense {
   vendor?: string;
   receiptUrl?: string; // Link to a document or uploaded receipt
   notes?: string;
+  bankAccountId?: string; // Linked bank account for ledger
 }
 
 export interface RecurringPayment {
@@ -320,12 +332,23 @@ export interface RecurringPayment {
 
 export interface PaymentLink {
     id: string;
-    tenantId: string;
+    payerId: string; // Tenant ID or Landlord ID
+    payerType: 'Tenant' | 'Landlord';
     amount: number;
     description: string;
     status: 'Open' | 'Paid' | 'Expired';
     createdAt: string;
     url: string;
+    frequency?: 'One-off' | 'Weekly' | 'Monthly';
+}
+
+export interface ArrearChaseLog {
+    id: string;
+    tenantId: string;
+    amountOverdue: number;
+    lastChasedDate: string;
+    chaseCount: number;
+    status: 'Active' | 'Resolved';
 }
 
 // Document Templates
@@ -424,7 +447,7 @@ export interface Landlord {
 export interface ApprovalRequest {
   id: string;
   landlordId: string;
-  type: 'Maintenance Quote' | 'Lease Renewal' | 'Compliance Certificate' | 'Other';
+  type: 'Maintenance Quote' | 'Lease Renewal' | 'Compliance Certificate' | 'Other' | 'Invoice';
   title: string;
   description?: string;
   amount?: number;
@@ -562,6 +585,11 @@ export interface AutomationWorkflow {
   lastRun?: string;
 }
 
+export interface EmergencyChecklistItem {
+    label: string;
+    checked: boolean;
+}
+
 export interface EmergencyItem {
     id: string;
     title: string;
@@ -570,6 +598,7 @@ export interface EmergencyItem {
     status: 'Open' | 'Resolved';
     timestamp: string;
     relatedId?: string;
+    checklist?: EmergencyChecklistItem[];
 }
 
 export interface DoriExecutionStep {
@@ -584,7 +613,7 @@ export interface DoriExecution {
     workflowName: string;
     entityName: string;
     entityRole: string;
-    status: 'Running' | 'Completed' | 'Failed' | 'Waiting';
+    status: 'Running' | 'Completed' | 'Failed' | 'Waiting' | 'Cancelled';
     startTime: string;
     steps: DoriExecutionStep[];
 }
@@ -622,4 +651,5 @@ export interface CrmData {
     meterReadings?: MeterReading[];
     inventoryChecks?: InventoryCheck[];
     teamMembers?: TeamMember[];
+    bankAccounts?: BankAccount[];
 }

@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react';
-import { DoriInteraction, DoriAction, EmergencyItem, DoriExecution, DoriExecutionStep } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { DoriInteraction, DoriAction, EmergencyItem, DoriExecution, DoriExecutionStep, EmergencyChecklistItem } from '../../types';
+import { generateEmergencyChecklist } from '../ai/gemini';
 import PageHeader from '../PageHeader';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
@@ -11,8 +12,10 @@ import {
     DoriIcon, MicrophoneIcon, PlayCircleIcon, StopCircleIcon, SpeakerWaveIcon, 
     BoltIcon, CheckCircleIcon, XMarkIcon, ChatBubbleLeftEllipsisIcon, PhoneIcon, 
     EnvelopeIcon, ClockIcon, ArrowTrendingUpIcon, PlusCircleIcon, FireIcon,
-    ArrowPathIcon, ListBulletIcon, MagnifyingGlassIcon, FunnelIcon, ChevronDownIcon, ChevronUpIcon
+    ArrowPathIcon, ListBulletIcon, MagnifyingGlassIcon, FunnelIcon, ChevronDownIcon, ChevronUpIcon,
+    ClipboardDocumentCheckIcon
 } from '../icons/HeroIcons';
+import Spinner from '../common/Spinner';
 
 interface DoriPageProps {
     interactions: DoriInteraction[];
@@ -21,6 +24,7 @@ interface DoriPageProps {
     executions: DoriExecution[];
     updateAction: (action: DoriAction) => void;
     updateEmergency: (item: EmergencyItem) => void;
+    addExecution: (execution: DoriExecution) => void;
 }
 
 interface EmergencyCardProps {
@@ -40,11 +44,128 @@ const EmergencyCard: React.FC<EmergencyCardProps> = ({ item, onResolve }) => (
                 <p className="text-xs text-red-500 mt-2 flex items-center"><ClockIcon className="w-3 h-3 mr-1"/> {new Date(item.timestamp).toLocaleString()}</p>
             </div>
         </div>
-        <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white border-none" onClick={() => onResolve({...item, status: 'Resolved'})}>
+        <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white border-none" onClick={() => onResolve(item)}>
             Resolve
         </Button>
     </div>
 )
+
+const ResolveEmergencyModal = ({ 
+    isOpen, 
+    onClose, 
+    item, 
+    onConfirm, 
+    updateEmergency 
+}: { 
+    isOpen: boolean, 
+    onClose: () => void, 
+    item: EmergencyItem | null, 
+    onConfirm: (notes: string, stepsTaken: string[]) => void,
+    updateEmergency: (item: EmergencyItem) => void
+}) => {
+    const [notes, setNotes] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (isOpen && item) {
+            // Only generate if checklist is completely missing. 
+            // If it exists (even empty array from previous save), we don't regenerate to preserve state.
+            if (!item.checklist) {
+                const fetchChecklist = async () => {
+                    setIsLoading(true);
+                    try {
+                        const steps = await generateEmergencyChecklist(item.title, item.description);
+                        const initialChecklist = steps.map(step => ({ label: step, checked: false }));
+                        updateEmergency({ ...item, checklist: initialChecklist });
+                    } catch (error) {
+                        console.error("Failed to generate checklist:", error);
+                    } finally {
+                        setIsLoading(false);
+                    }
+                };
+                fetchChecklist();
+            }
+        }
+        // Depend on item.id so we switch context correctly, but don't re-run when 'item' updates (checklist toggles)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [item?.id, isOpen]);
+
+    if (!isOpen || !item) return null;
+
+    const handleStepToggle = (index: number) => {
+        if (!item.checklist) return;
+        const newChecklist = [...item.checklist];
+        newChecklist[index] = { ...newChecklist[index], checked: !newChecklist[index].checked };
+        updateEmergency({ ...item, checklist: newChecklist });
+    }
+
+    const handleSubmit = () => {
+        const stepsTaken = item.checklist ? item.checklist.filter(s => s.checked).map(s => s.label) : [];
+        onConfirm(notes, stepsTaken);
+    }
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title="Emergency Resolution Protocol">
+            <div className="space-y-6">
+                <div className="bg-red-50 border border-red-100 p-4 rounded-lg flex items-start">
+                    <FireIcon className="w-6 h-6 text-red-500 mr-3 mt-1 flex-shrink-0"/>
+                    <div>
+                        <h4 className="font-bold text-red-900 mb-1">{item.title}</h4>
+                        <p className="text-sm text-red-800">{item.description}</p>
+                        <p className="text-xs text-red-600 mt-2 font-mono">Reported: {new Date(item.timestamp).toLocaleString()}</p>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 className="font-semibold text-zinc-900 mb-3 flex items-center text-sm uppercase tracking-wider">
+                        <ClipboardDocumentCheckIcon className="w-5 h-5 mr-2 text-indigo-500"/> Recommended Next Steps (Dori AI)
+                    </h4>
+                    
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center py-6 text-zinc-500">
+                            <Spinner className="w-6 h-6 text-indigo-500 mb-2" />
+                            <p className="text-xs">Generating context-aware safety protocols...</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {item.checklist && item.checklist.length > 0 ? item.checklist.map((step, idx) => (
+                                <div 
+                                    key={idx} 
+                                    className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all ${
+                                        step.checked ? 'bg-green-50 border-green-200' : 'bg-white border-zinc-200 hover:border-indigo-300'
+                                    }`} 
+                                    onClick={() => handleStepToggle(idx)}
+                                >
+                                    <div className={`w-5 h-5 rounded flex items-center justify-center mr-3 transition-colors flex-shrink-0 ${
+                                        step.checked ? 'bg-green-500 text-white' : 'bg-zinc-100 border border-zinc-300'
+                                    }`}>
+                                        {step.checked && <CheckCircleIcon className="w-3.5 h-3.5" />}
+                                    </div>
+                                    <span className={`text-sm ${step.checked ? 'text-green-800 font-medium' : 'text-zinc-700'}`}>{step.label}</span>
+                                </div>
+                            )) : (
+                                <p className="text-sm text-zinc-400 italic">No specific steps generated.</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                <Textarea 
+                    label="Resolution Notes" 
+                    placeholder="Describe how the issue was resolved, contractor details, and any follow-up required..." 
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={4}
+                />
+
+                <div className="flex justify-end pt-4 border-t border-zinc-100 gap-3">
+                    <Button variant="outline" onClick={onClose}>Cancel</Button>
+                    <Button variant="primary" onClick={handleSubmit}>Confirm & Resolve</Button>
+                </div>
+            </div>
+        </Modal>
+    )
+}
 
 const LiveConsole = ({ status, emergencies, onResolveEmergency }: { status: 'Online' | 'Offline', emergencies: EmergencyItem[], onResolveEmergency: (i: EmergencyItem) => void }) => {
     const [isListening, setIsListening] = useState(true);
@@ -110,7 +231,7 @@ const LiveConsole = ({ status, emergencies, onResolveEmergency }: { status: 'Onl
                                         <p className="text-sm text-red-300/80">{em.description}</p>
                                         <p className="text-xs text-red-400 mt-1">{new Date(em.timestamp).toLocaleString()}</p>
                                     </div>
-                                    <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white border-none" onClick={() => onResolveEmergency({...em, status: 'Resolved'})}>
+                                    <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white border-none" onClick={() => onResolveEmergency(em)}>
                                         Resolve
                                     </Button>
                                 </div>
@@ -178,7 +299,7 @@ const ActionCard: React.FC<ActionCardProps> = ({ action, onUpdate }) => (
                     <span className="text-[10px] bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded border border-zinc-200">{action.type}</span>
                 </div>
                 <p className="text-xs text-zinc-600 mb-2">{action.description}</p>
-                <p className="text-[10px] text-zinc-400">Confidence: {action.confidenceScore}%</p>
+                <p className="text-xs text-zinc-400">Confidence: {action.confidenceScore}%</p>
             </div>
             <div className="flex gap-2">
                 <button onClick={() => onUpdate({...action, status: 'Rejected'})} className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors"><XMarkIcon className="w-5 h-5"/></button>
@@ -241,7 +362,7 @@ const TranscriptModal = ({ log, onClose }: { log: DoriInteraction, onClose: () =
 const ExecutionLogList = ({ executions }: { executions: DoriExecution[] }) => {
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState<'All' | 'Running' | 'Completed'>('All');
+    const [statusFilter, setStatusFilter] = useState<'All' | 'Running' | 'Completed' | 'Cancelled'>('All');
 
     const filteredExecutions = executions.filter(ex => {
         const matchesSearch = ex.workflowName.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -260,6 +381,7 @@ const ExecutionLogList = ({ executions }: { executions: DoriExecution[] }) => {
             case 'Completed': return 'bg-green-100 text-green-700';
             case 'Failed': return 'bg-red-100 text-red-700';
             case 'Waiting': return 'bg-yellow-100 text-yellow-700';
+            case 'Cancelled': return 'bg-gray-100 text-gray-600';
             default: return 'bg-zinc-100 text-zinc-700';
         }
     }
@@ -289,6 +411,7 @@ const ExecutionLogList = ({ executions }: { executions: DoriExecution[] }) => {
                         <option value="All">All Status</option>
                         <option value="Running">Running</option>
                         <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
                     </select>
                 </div>
             </div>
@@ -354,19 +477,87 @@ const ExecutionLogList = ({ executions }: { executions: DoriExecution[] }) => {
 }
 
 const DoriPage: React.FC<DoriPageProps> = ({ 
-    interactions, actions, emergencies, updateAction, updateEmergency, executions
+    interactions, actions, emergencies, updateAction, updateEmergency, executions, addExecution
 }) => {
     const [selectedLog, setSelectedLog] = useState<DoriInteraction | null>(null);
+    
+    // Use ID to track the active modal item instead of an object reference to prevent stale state issues
+    const [resolveModalId, setResolveModalId] = useState<string | null>(null);
+    const activeResolveItem = emergencies.find(e => e.id === resolveModalId) || null;
 
     const pendingActions = actions.filter(a => a.status === 'Pending');
     const openEmergencies = emergencies.filter(e => e.status === 'Open');
+
+    const handleActionUpdate = (updatedAction: DoriAction) => {
+        updateAction(updatedAction);
+        
+        if (updatedAction.status === 'Approved' || updatedAction.status === 'Rejected') {
+            const isRejected = updatedAction.status === 'Rejected';
+            const newExecution: DoriExecution = {
+                id: `exec_${Date.now()}`,
+                workflowName: `${updatedAction.type} Queue`,
+                entityName: 'System Admin',
+                entityRole: 'User',
+                status: isRejected ? 'Cancelled' : 'Completed',
+                startTime: new Date().toISOString(),
+                steps: [
+                    {
+                        id: `step_${Date.now()}`,
+                        timestamp: new Date().toISOString(),
+                        description: isRejected 
+                            ? `User cancelled action: ${updatedAction.title}`
+                            : `User approved: ${updatedAction.title}`,
+                        status: (isRejected ? 'Skipped' : 'Completed') as DoriExecutionStep['status']
+                    }
+                ]
+            };
+            addExecution(newExecution);
+        }
+    };
+
+    const handleOpenResolveModal = (item: EmergencyItem) => {
+        setResolveModalId(item.id);
+    }
+
+    const handleConfirmResolution = (notes: string, stepsTaken: string[]) => {
+        if (!activeResolveItem) return;
+
+        // Resolve in state
+        updateEmergency({...activeResolveItem, status: 'Resolved'});
+
+        // Log the resolution event with detailed steps
+        const newExecution: DoriExecution = {
+            id: `exec_emerg_${Date.now()}`,
+            workflowName: 'Emergency Protocol',
+            entityName: 'System Admin',
+            entityRole: 'User',
+            status: 'Completed',
+            startTime: new Date().toISOString(),
+            steps: [
+                ...stepsTaken.map((step, idx) => ({
+                    id: `step_${Date.now()}_${idx}`,
+                    timestamp: new Date().toISOString(),
+                    description: `Protocol: ${step}`,
+                    status: 'Completed' as DoriExecutionStep['status']
+                })),
+                {
+                    id: `step_${Date.now()}_final`,
+                    timestamp: new Date().toISOString(),
+                    description: `Critical Incident Resolved: ${activeResolveItem.title}. Notes: ${notes}`,
+                    status: 'Completed' as DoriExecutionStep['status']
+                }
+            ]
+        };
+        addExecution(newExecution);
+        setResolveModalId(null);
+    }
 
     return (
         <div className="animate-fade-in space-y-6">
             <PageHeader title="Dori Command Center" subtitle="Your automated concierge and operation handler." />
 
             <div className="space-y-6">
-                <LiveConsole status="Online" emergencies={openEmergencies} onResolveEmergency={updateEmergency} />
+                <LiveConsole status="Online" emergencies={openEmergencies} onResolveEmergency={handleOpenResolveModal} />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Left: Logs */}
@@ -400,7 +591,7 @@ const DoriPage: React.FC<DoriPageProps> = ({
                             {pendingActions.length > 0 ? (
                                 <div>
                                     {pendingActions.map(action => (
-                                        <ActionCard key={action.id} action={action} onUpdate={updateAction} />
+                                        <ActionCard key={action.id} action={action} onUpdate={handleActionUpdate} />
                                     ))}
                                 </div>
                             ) : (
@@ -413,6 +604,13 @@ const DoriPage: React.FC<DoriPageProps> = ({
 
             {/* Modals */}
             <TranscriptModal log={selectedLog!} onClose={() => setSelectedLog(null)} />
+            <ResolveEmergencyModal 
+                isOpen={!!activeResolveItem} 
+                onClose={() => setResolveModalId(null)} 
+                item={activeResolveItem}
+                onConfirm={handleConfirmResolution}
+                updateEmergency={updateEmergency}
+            />
         </div>
     );
 };

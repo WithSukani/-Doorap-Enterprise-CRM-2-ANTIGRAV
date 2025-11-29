@@ -240,7 +240,7 @@ const TenancyWorkflowModal: React.FC<TenancyWorkflowModalProps> = ({
                 {step === 1 && (
                     <div className="space-y-4">
                         <h3 className="text-lg font-semibold mb-4">Key Dates & Utilities</h3>
-                        <Input label={`${type} Date`} type="date" value={date} onChange={e => setDate(e.target.value)} />
+                        <Input label={`${type} Date`} name="workflowDate" type="date" value={date} onChange={e => setDate(e.target.value)} />
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {renderMeterInput("Gas Reading", gasReading, setGasReading, gasPhoto, setGasPhoto)}
                             {renderMeterInput("Electric Reading", elecReading, setElecReading, elecPhoto, setElecPhoto)}

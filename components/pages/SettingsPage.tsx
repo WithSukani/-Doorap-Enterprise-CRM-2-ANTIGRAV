@@ -483,6 +483,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                   <div className="space-y-4">
                       <Input 
                         label="API Key" 
+                        name="apiKey"
                         type="password" 
                         value={apiKey} 
                         onChange={(e) => setApiKey(e.target.value)} 

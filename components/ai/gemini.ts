@@ -402,3 +402,52 @@ export const compareInventoryDocuments = async (
         throw new Error("Failed to analyze documents. Please try again.");
     }
 };
+
+const emergencyChecklistSchema = {
+    type: Type.ARRAY,
+    items: { type: Type.STRING },
+};
+
+export const generateEmergencyChecklist = async (
+    title: string,
+    description: string
+): Promise<string[]> => {
+    if (!process.env.API_KEY) {
+        throw new Error("AI features are not configured.");
+    }
+    const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+
+    const systemInstruction = "You are an expert property manager and safety officer. Your job is to provide a concise, actionable checklist of 3-5 immediate steps required to handle a specific property emergency. Focus on safety, compliance (UK laws like RIDDOR/Gas Safety), and limiting damage. Return ONLY a JSON array of strings.";
+
+    const prompt = `
+        Emergency Title: ${title}
+        Description: ${description}
+
+        Generate the recommended next steps checklist.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                systemInstruction: systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: emergencyChecklistSchema,
+            }
+        });
+
+        const jsonString = response.text;
+        return JSON.parse(jsonString) as string[];
+
+    } catch (error) {
+        console.error("Error generating emergency checklist:", error);
+        // Fallback checklist if AI fails
+        return [
+            "Ensure tenant safety immediately.",
+            "Contact appropriate emergency services or contractors.",
+            "Inform the landlord.",
+            "Document the incident with photos/notes."
+        ];
+    }
+};

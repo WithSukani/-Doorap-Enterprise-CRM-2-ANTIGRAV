@@ -2,7 +2,7 @@
 import { 
     PropertyType, MaintenanceStatus, MaintenancePriority, DocumentType, CommunicationType, NotificationType, ExpenseCategory, TaskStatus,
     DocumentParentType, CommunicationLogParentType, NotificationParentType, Landlord, ApprovalRequest, Property, MeterReading, InventoryCheck, Tenant, ChatSession,
-    DoriInteraction, DoriAction, AutomationWorkflow, EmergencyItem, DoriExecution, TeamMember, RecurringPayment, PaymentLink
+    DoriInteraction, DoriAction, AutomationWorkflow, EmergencyItem, DoriExecution, TeamMember, RecurringPayment, PaymentLink, BankAccount
 } from './types';
 
 export const APP_NAME = "Doorap";
@@ -60,6 +60,12 @@ export const INITIAL_LANDLORDS: Landlord[] = [
     lastInteractionDate: new Date(Date.now() - 86400000 * 5).toISOString(),
     notes: 'Concerned about recent maintenance costs.'
   }
+];
+
+export const INITIAL_BANK_ACCOUNTS: BankAccount[] = [
+    { id: 'ba1', name: 'Client Money - Lettings', last4: '4242', balance: 45200.50, currency: 'GBP', status: 'Active', type: 'Checking' },
+    { id: 'ba2', name: 'Operations - Main', last4: '8812', balance: 12450.00, currency: 'GBP', status: 'Active', type: 'Checking' },
+    { id: 'ba3', name: 'Reserve Fund - Block A', last4: '1129', balance: 8900.25, currency: 'GBP', status: 'Active', type: 'Savings' },
 ];
 
 export const INITIAL_TEAM_MEMBERS: TeamMember[] = [
@@ -185,9 +191,13 @@ export const INITIAL_NOTIFICATIONS = [
 ];
 
 // Initial empty arrays for new data types
-export const INITIAL_RENT_PAYMENTS = [];
+export const INITIAL_RENT_PAYMENTS = [
+    { id: 'rp1', tenantId: 'ten1', propertyId: 'prop1', date: new Date().toISOString().split('T')[0], amount: 1200, paymentMethod: 'Bank Transfer', bankAccountId: 'ba1' },
+    { id: 'rp2', tenantId: 'ten2', propertyId: 'prop2', date: new Date(Date.now() - 172800000).toISOString().split('T')[0], amount: 950, paymentMethod: 'Bank Transfer', bankAccountId: 'ba1' },
+];
 export const INITIAL_EXPENSES = [ // Example expense
-    { id: 'exp1', propertyId: 'prop1', date: '2023-11-15', category: ExpenseCategory.REPAIRS_MAINTENANCE, description: 'Fix kitchen sink plumbing', amount: 120.50, vendor: 'PlumbPerfect Inc.'}
+    { id: 'exp1', propertyId: 'prop1', date: '2023-11-15', category: ExpenseCategory.REPAIRS_MAINTENANCE, description: 'Fix kitchen sink plumbing', amount: 120.00, vendor: 'PlumbPerfect Inc.', bankAccountId: 'ba2'},
+    { id: 'exp2', propertyId: 'prop2', date: '2023-12-05', category: ExpenseCategory.UTILITIES, description: 'Communal electricity', amount: 45.50, vendor: 'British Gas', bankAccountId: 'ba2' }
 ];
 export const INITIAL_DOCUMENT_TEMPLATES = [
     {
@@ -397,5 +407,5 @@ export const INITIAL_RECURRING_PAYMENTS: RecurringPayment[] = [
 ];
 
 export const INITIAL_PAYMENT_LINKS: PaymentLink[] = [
-    { id: 'pl_1', tenantId: 'ten3', amount: 50.00, description: 'Replacement Key Fee', status: 'Open', createdAt: new Date().toISOString(), url: 'https://buy.stripe.com/test_key_fee' }
+    { id: 'pl_1', payerId: 'ten3', payerType: 'Tenant', amount: 50.00, description: 'Replacement Key Fee', status: 'Open', createdAt: new Date().toISOString(), url: 'https://buy.stripe.com/test_key_fee' }
 ];

@@ -1,4 +1,3 @@
-
 // ... existing imports ...
 import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
@@ -7,7 +6,7 @@ import {
     Property, Tenant, MaintenanceRequest, Reminder, SLA, UserProfile, Document, CommunicationLog, Notification as NotificationData, ChatMessage, ChatSession,
     RentPayment, Expense, DocumentTemplate, Task, Vacancy, Applicant, Inspection, InspectionChecklistItem, CalendarEvent, Landlord, ApprovalRequest, Folder,
     MeterReading, InventoryCheck, InventoryItem, DoriInteraction, DoriAction, AutomationWorkflow, EmergencyItem, DoriExecution, TeamMember,
-    RecurringPayment, PaymentLink
+    RecurringPayment, PaymentLink, BankAccount
 } from './types';
 import { 
     INITIAL_PROPERTIES, INITIAL_TENANTS, INITIAL_MAINTENANCE_REQUESTS, INITIAL_REMINDERS, INITIAL_SLAS, USER_PROFILE_DATA, APP_NAME, 
@@ -15,7 +14,7 @@ import {
     INITIAL_RENT_PAYMENTS, INITIAL_EXPENSES, INITIAL_DOCUMENT_TEMPLATES, INITIAL_TASKS, INITIAL_VACANCIES, INITIAL_APPLICANTS,
     INITIAL_INSPECTIONS, INITIAL_INSPECTION_CHECKLIST_ITEMS, INITIAL_LANDLORDS, INITIAL_APPROVALS,
     INITIAL_METER_READINGS, INITIAL_INVENTORY_CHECKS, INITIAL_CHAT_SESSIONS, INITIAL_DORI_LOGS, INITIAL_DORI_ACTIONS, INITIAL_WORKFLOWS, INITIAL_EMERGENCIES, INITIAL_DORI_EXECUTIONS, INITIAL_TEAM_MEMBERS,
-    INITIAL_RECURRING_PAYMENTS, INITIAL_PAYMENT_LINKS
+    INITIAL_RECURRING_PAYMENTS, INITIAL_PAYMENT_LINKS, INITIAL_BANK_ACCOUNTS
 } from './constants';
 import Sidebar from './components/Sidebar';
 import DashboardPage from './components/pages/DashboardPage';
@@ -95,6 +94,7 @@ const App = () => {
   // Financial Advanced
   const [recurringPayments, setRecurringPayments] = useLocalStorage<RecurringPayment[]>('crm_recurring_payments', INITIAL_RECURRING_PAYMENTS);
   const [paymentLinks, setPaymentLinks] = useLocalStorage<PaymentLink[]>('crm_payment_links', INITIAL_PAYMENT_LINKS);
+  const [bankAccounts, setBankAccounts] = useLocalStorage<BankAccount[]>('crm_bank_accounts', INITIAL_BANK_ACCOUNTS);
 
   // Dori State
   const [doriInteractions, setDoriInteractions] = useLocalStorage<DoriInteraction[]>('crm_dori_interactions', INITIAL_DORI_LOGS);
@@ -356,10 +356,14 @@ const App = () => {
   const updateWorkflow = (wf: AutomationWorkflow) => setAutomationWorkflows(prev => prev.map(w => w.id === wf.id ? wf : w));
   const deleteWorkflow = (id: string) => setAutomationWorkflows(prev => prev.filter(w => w.id !== id));
   const updateEmergency = (item: EmergencyItem) => setEmergencies(prev => prev.map(e => e.id === item.id ? item : e));
+  const addDoriExecution = (execution: DoriExecution) => setDoriExecutions(prev => [execution, ...prev]);
 
   // Financial Advanced
   const addRecurringPayment = (payment: RecurringPayment) => setRecurringPayments(prev => [...prev, payment]);
   const addPaymentLink = (link: PaymentLink) => setPaymentLinks(prev => [...prev, link]);
+  
+  // New Bank Accounts CRUD
+  const addBankAccount = (account: BankAccount) => setBankAccounts(prev => [...prev, account]);
 
 
   const handleSendMessage = (chatId: string, text: string, senderType: 'user' | 'support_admin' | 'tenant_simulated' | string) => {
@@ -494,6 +498,7 @@ const App = () => {
                     emergencies={emergencies}
                     updateEmergency={updateEmergency}
                     executions={doriExecutions}
+                    addExecution={addDoriExecution}
                 />}
             />
             <Route path="/properties" element={<PropertiesPage 
