@@ -1,0 +1,6 @@
+
+// Logic explanation:
+// The "blank page" is almost certainly a React render error (White Screen of Death).
+// Common cause: Tries to map or spread "null".
+// "null" comes from localStorage returning "null" string, which JSON.parse turns into null object (not undefined).
+// Fix: Default to [] if null.

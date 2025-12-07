@@ -45,7 +45,8 @@ const useLocalStorage = <T,>(key: string, initialValue: T): [T, React.Dispatch<R
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {
       const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
+      const parsed = item ? JSON.parse(item) : initialValue;
+      return parsed !== null ? parsed : initialValue;
     } catch (error) {
       console.error(`Error reading localStorage key "${key}":`, error);
       return initialValue;
@@ -457,7 +458,7 @@ const MainAppLayout = () => {
       {/* Modals ... */}
       {isSubscriptionModalOpen && <SubscriptionModal onClose={() => setIsSubscriptionModalOpen(false)} />}
       <SupportChatLauncher onClick={openSupportChat} />
-      {isSupportChatOpen && <ChatModal isOpen={isSupportChatOpen} onClose={closeSupportChat} title={supportChatSession.name} messages={supportChatSession.messages} onSendMessage={(text) => handleSendMessage(supportSessionId, text, 'user')} currentUser={userProfile} targetAvatarUrl={supportChatSession.targetAvatarUrl} />}
+      {isSupportChatOpen && <ChatModal isOpen={isSupportChatOpen} onClose={closeSupportChat} title={supportChatSession.name} messages={supportChatSession.messages} onSendMessage={(text) => handleSendMessage(supportChatSession.id, text, 'user')} currentUser={userProfile} targetAvatarUrl={supportChatSession.targetAvatarUrl} />}
       {activeTenantForChat && currentTenantChatSession && <ChatModal isOpen={!!activeTenantForChat} onClose={closeTenantChat} title={currentTenantChatSession.name} messages={currentTenantChatSession.messages} onSendMessage={(text) => handleSendMessage(currentTenantChatSession.id, text, 'user')} currentUser={userProfile} targetAvatarUrl={currentTenantChatSession.targetAvatarUrl} />}
     </div>
   );
