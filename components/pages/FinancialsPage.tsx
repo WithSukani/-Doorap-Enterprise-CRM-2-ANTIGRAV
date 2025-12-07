@@ -5,6 +5,9 @@ import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { AlertCircle, CheckCircle, ExternalLink, Building2, Wallet } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
+import { AccountCarousel } from "../financials/AccountCarousel";
+import { PaymentModal } from "../financials/PaymentModal";
+import { TransactionLedger } from "../financials/TransactionLedger";
 
 // Initialize Stripe with your Publishable Key
 // TODO: Replace with your actual Publishable Key from environment variables
@@ -16,16 +19,144 @@ const FinancialsPage = () => {
     const [linking, setLinking] = useState(false);
     const [financialsActive, setFinancialsActive] = useState(false);
     const [stripeAccountId, setStripeAccountId] = useState<string | null>(null);
+    const [balance, setBalance] = useState<any>(null);
+    const [bankAccounts, setBankAccounts] = useState<any[]>([]);
+
+    // V2 Data
+    const [transactions, setTransactions] = useState<any[]>([]);
+    const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+    const [loadingTx, setLoadingTx] = useState(false);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
     useEffect(() => {
-        fetchProfile();
-        // Check for success query param
         const params = new URLSearchParams(window.location.search);
         if (params.get('success') === 'true') {
-            // Ideally we'd poll or wait for webhook here, but for now just refetch
+            checkStripeStatus();
+        } else {
             fetchProfile();
         }
     }, []);
+
+    useEffect(() => {
+        if (financialsActive && stripeAccountId) {
+            fetchFinancialData();
+            fetchTransactions();
+        }
+    }, [financialsActive, stripeAccountId]);
+
+    const fetchFinancialData = async () => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL || 'https://rwbyqcycgoyslkrwowja.supabase.co'}/functions/v1/stripe-connect/get-data`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setBalance(data.balance);
+                setBankAccounts(data.bankAccounts);
+            }
+        } catch (error) {
+            console.error('Error fetching financial data:', error);
+        }
+    };
+
+    const fetchTransactions = async () => {
+        setLoadingTx(true);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL || 'https://rwbyqcycgoyslkrwowja.supabase.co'}/functions/v1/stripe-connect/get-transactions`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ limit: 20 })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setTransactions(data.transactions || []);
+            }
+        } catch (error) {
+            console.error('Error fetching transactions:', error);
+        } finally {
+            setLoadingTx(false);
+        }
+    };
+
+    const handleCreateLink = async (formData: any) => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL || 'https://rwbyqcycgoyslkrwowja.supabase.co'}/functions/v1/stripe-connect/create-payment-link`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.url) {
+                // Copy to clipboard or open
+                window.open(data.url, '_blank');
+                alert(`Payment Link Created!\n${data.url}`);
+            } else {
+                alert(`Error: ${data.error}`);
+            }
+
+        } catch (error) {
+            console.error('Error creating link:', error);
+            alert('Failed to create payment link.');
+        }
+    };
+
+    const checkStripeStatus = async () => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            // Force sync with Stripe
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL || 'https://rwbyqcycgoyslkrwowja.supabase.co'}/functions/v1/stripe-connect/check-status`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.active) {
+                    setFinancialsActive(true);
+                    // Also refresh profile to get account ID if needed
+                    fetchProfile();
+                } else {
+                    // If still not active, just fetch profile normal
+                    fetchProfile();
+                }
+            } else {
+                fetchProfile();
+            }
+        } catch (error) {
+            console.error('Error checking status:', error);
+            fetchProfile();
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const fetchProfile = async () => {
         try {
@@ -121,7 +252,7 @@ const FinancialsPage = () => {
             } else {
                 // accounts linked successfully
                 alert('Bank account linked successfully!');
-                // You might want to save the linked account details or just refresh
+                fetchFinancialData(); // Refresh data
             }
 
         } catch (error) {
@@ -136,19 +267,29 @@ const FinancialsPage = () => {
     }
 
     return (
-        <div className="p-8 max-w-4xl mx-auto space-y-8">
+        <div className="p-8 max-w-6xl mx-auto space-y-8 pb-20">
             <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold tracking-tight text-white">Financials</h1>
+                <div className="flex items-center gap-4">
+                    <h1 className="text-3xl font-bold tracking-tight text-white">Financials</h1>
+                    {financialsActive && (
+                        <div className="flex items-center text-green-500 font-medium bg-green-500/10 px-3 py-1 rounded-full text-sm">
+                            <CheckCircle className="w-3 h-3 mr-2" />
+                            Live
+                        </div>
+                    )}
+                </div>
                 {financialsActive && (
-                    <div className="flex items-center text-green-500 font-medium bg-green-500/10 px-3 py-1 rounded-full">
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Active
-                    </div>
+                    <Button
+                        onClick={() => setIsPaymentModalOpen(true)}
+                        className="bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20"
+                    >
+                        Money In / Rent
+                    </Button>
                 )}
             </div>
 
             {!financialsActive ? (
-                <Card className="border-zinc-800 bg-zinc-900/50">
+                <Card className="border-zinc-800 bg-zinc-900/50 max-w-4xl mx-auto mt-20">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Building2 className="w-6 h-6 text-blue-500" />
@@ -178,38 +319,28 @@ const FinancialsPage = () => {
                     </CardContent>
                 </Card>
             ) : (
-                <div className="grid gap-6 md:grid-cols-2">
-                    {/* Balance Card - Placeholder */}
-                    <Card className="border-zinc-800 bg-zinc-900/50">
-                        <CardHeader>
-                            <CardTitle>Current Balance</CardTitle>
-                            <CardDescription>Available for payout</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-4xl font-bold text-white">$0.00</p>
-                        </CardContent>
-                    </Card>
+                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-500">
+                    {/* 1. Account Carousel */}
+                    <AccountCarousel
+                        accounts={bankAccounts}
+                        selectedAccountId={selectedAccountId}
+                        onSelectAccount={setSelectedAccountId}
+                        onLinkAccount={handleLinkBank}
+                        linking={linking}
+                    />
 
-                    {/* Bank Accounts Card */}
-                    <Card className="border-zinc-800 bg-zinc-900/50">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Wallet className="w-5 h-5" />
-                                Bank Accounts
-                            </CardTitle>
-                            <CardDescription>Manage linked accounts for payouts</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Button
-                                onClick={handleLinkBank}
-                                disabled={linking}
-                                variant="outline"
-                                className="w-full border-dashed border-2 py-8 hover:border-zinc-500 hover:bg-zinc-800/50"
-                            >
-                                {linking ? 'Opening...' : '+ Link Bank Account'}
-                            </Button>
-                        </CardContent>
-                    </Card>
+                    {/* 2. Transaction Ledger */}
+                    <TransactionLedger
+                        transactions={transactions}
+                        loading={loadingTx}
+                    />
+
+                    {/* Payment Modal */}
+                    <PaymentModal
+                        isOpen={isPaymentModalOpen}
+                        onClose={() => setIsPaymentModalOpen(false)}
+                        onCreateLink={handleCreateLink}
+                    />
                 </div>
             )}
         </div>
