@@ -244,3 +244,140 @@ CREATE POLICY "Users can only see their own chat messages" ON chat_messages USIN
 -- ==========================================
 -- END SECURITY SETUP
 -- ==========================================
+-- ==============================================================================
+-- MIGRATION: ADD MULTI-TENANCY (USER_ID) TO ALL TABLES
+-- This script adds a `user_id` column to all data tables to support data isolation.
+-- ==============================================================================
+
+-- 1. Add user_id column to tables
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE landlords ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE maintenance_requests ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE reminders ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE communication_logs ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE bank_accounts ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE rent_payments ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE expenses ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE recurring_payments ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE slas ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE automation_workflows ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE dori_interactions ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE dori_actions ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE emergencies ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE vacancies ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE applicants ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE inspections ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE inspection_checklist_items ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE approval_requests ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE folders ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE meter_readings ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE inventory_checks ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE document_templates ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE payment_links ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+-- notifications already has user_id, but lets make sure
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
+
+-- 2. IMPORTANT: Backfill existing data
+-- Since we don't know your specific User ID, we cannot automatically assign these rows to you.
+-- RUN THE FOLLOWING COMMAND MANUALLY IN SUPABASE SQL EDITOR, REPLACING THE ID:
+-- UPDATE properties SET user_id = 'YOUR_USER_ID_HERE' WHERE user_id IS NULL;
+-- (Repeat for all tables above if you want to keep data visible)
+
+-- 3. Enable RLS on all tables
+ALTER TABLE properties ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE landlords ENABLE ROW LEVEL SECURITY;
+ALTER TABLE maintenance_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reminders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE communication_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bank_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rent_payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE recurring_payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE slas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE automation_workflows ENABLE ROW LEVEL SECURITY;
+ALTER TABLE dori_interactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE dori_actions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE emergencies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vacancies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE applicants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inspections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inspection_checklist_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE approval_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE folders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE meter_readings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory_checks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE document_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payment_links ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+
+-- 4. Create/Refresh RLS Policies
+-- We drop existing policies to ensure clean state
+-- PROPERTIES
+DROP POLICY IF EXISTS "Users can select own properties" ON properties;
+DROP POLICY IF EXISTS "Users can insert own properties" ON properties;
+DROP POLICY IF EXISTS "Users can update own properties" ON properties;
+DROP POLICY IF EXISTS "Users can delete own properties" ON properties;
+
+CREATE POLICY "Users can select own properties" ON properties FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own properties" ON properties FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own properties" ON properties FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own properties" ON properties FOR DELETE USING (auth.uid() = user_id);
+
+-- TENANTS
+DROP POLICY IF EXISTS "Users can CRUD own tenants" ON tenants;
+CREATE POLICY "Users can CRUD own tenants" ON tenants USING (auth.uid() = user_id);
+
+-- LANDLORDS
+DROP POLICY IF EXISTS "Users can CRUD own landlords" ON landlords;
+CREATE POLICY "Users can CRUD own landlords" ON landlords USING (auth.uid() = user_id);
+
+-- MAINTENANCE REQUESTS
+DROP POLICY IF EXISTS "Users can CRUD own maintenance" ON maintenance_requests;
+CREATE POLICY "Users can CRUD own maintenance" ON maintenance_requests USING (auth.uid() = user_id);
+
+-- REMINDERS
+DROP POLICY IF EXISTS "Users can CRUD own reminders" ON reminders;
+CREATE POLICY "Users can CRUD own reminders" ON reminders USING (auth.uid() = user_id);
+
+-- DOCUMENTS
+DROP POLICY IF EXISTS "Users can CRUD own documents" ON documents;
+CREATE POLICY "Users can CRUD own documents" ON documents USING (auth.uid() = user_id);
+
+-- USER PROFILES (Strict)
+DROP POLICY IF EXISTS "Users can CRUD own profile" ON user_profiles;
+CREATE POLICY "Users can CRUD own profile" ON user_profiles USING (auth.uid() = id);
+
+-- 5. Helper Function to auto-assign user_id on insert (Optional but recommended)
+-- This ensures that when the frontend inserts a row, user_id is set to auth.uid() if missing.
+
+CREATE OR REPLACE FUNCTION public.handle_new_user_row()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.user_id IS NULL THEN
+    NEW.user_id := auth.uid();
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger for Properties
+DROP TRIGGER IF EXISTS on_property_insert ON properties;
+CREATE TRIGGER on_property_insert BEFORE INSERT ON properties FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
+
+-- Trigger for Tenants
+DROP TRIGGER IF EXISTS on_tenant_insert ON tenants;
+CREATE TRIGGER on_tenant_insert BEFORE INSERT ON tenants FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
+
+-- Trigger for Landlords
+DROP TRIGGER IF EXISTS on_landlord_insert ON landlords;
+CREATE TRIGGER on_landlord_insert BEFORE INSERT ON landlords FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
+
+-- (Repeat triggers for other tables if needed, but these are the main ones)

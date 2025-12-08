@@ -65,6 +65,41 @@ export const useDoorapData = (session: any) => {
         const fetchData = async () => {
             // If no session, don't fetch (or clear data)
             if (!session) {
+                // Clear all data when session is null
+                setProperties([]);
+                setTenants([]);
+                setLandlords([]);
+                setMaintenanceRequests([]);
+                setReminders([]);
+                setDocuments([]);
+                setCommunicationLogs([]);
+                setBankAccounts([]);
+                setRentPayments([]);
+                setExpenses([]);
+                setRecurringPayments([]);
+                setSlas([]);
+                setAutomationWorkflows([]);
+                setDoriInteractions([]);
+                setNotifications([]);
+                setUserProfile(null);
+                setTeamMembers([]);
+                setTasks([]);
+                setVacancies([]);
+                setApplicants([]);
+                setInspections([]);
+                setInspectionChecklistItems([]);
+                setApprovalRequests([]);
+                setFolders([]);
+                setMeterReadings([]);
+                setInventoryChecks([]);
+                setDocumentTemplates([]);
+                setPaymentLinks([]);
+                setChatSessions({});
+                setDoriActions([]);
+                setDoriExecutions([]);
+                setEmergencies([]);
+                setPortalSettings([]);
+                setIntegrationSettings([]);
                 setLoading(false);
                 return;
             }
@@ -89,7 +124,7 @@ export const useDoorapData = (session: any) => {
                     supabase.from('automation_workflows').select('*'),
                     supabase.from('dori_interactions').select('*'),
                     supabase.from('notifications').select('*'),
-                    supabase.from('user_profiles').select('*').limit(1), // Assume single user for now
+                    supabase.from('user_profiles').select('*').eq('id', session.user.id).single(), // Strict filter by auth ID
                     supabase.from('team_members').select('*'),
                     // New tables
                     supabase.from('tasks').select('*'),

@@ -130,6 +130,7 @@ export const CustomFieldType = Object.freeze({
 // Data structure interfaces
 export interface Property {
   id: string;
+  userId?: string; // Owner of the record
   address: string;
   postcode: string;
   type: (typeof PropertyType)[keyof typeof PropertyType];
@@ -146,6 +147,7 @@ export interface Property {
 
 export interface Tenant {
   id: string;
+  userId?: string;
   propertyId: string;
   name: string;
   email: string;
@@ -164,6 +166,7 @@ export interface Tenant {
 
 export interface MaintenanceRequest {
   id: string;
+  userId?: string;
   propertyId: string;
   tenantId?: string;
   issueTitle: string;
@@ -184,6 +187,7 @@ export interface MaintenanceRequest {
 
 export interface Reminder {
   id: string;
+  userId?: string;
   propertyId: string;
   task: string;
   dueDate: string; // ISO string date part
@@ -206,6 +210,7 @@ export interface SLA {
 export type DocumentParentType = 'property' | 'tenant' | 'maintenance_request' | 'inspection' | 'financial_transaction';
 export interface Document {
   id: string;
+  userId?: string;
   parentId: string;
   parentType: DocumentParentType;
   name: string;
@@ -232,6 +237,7 @@ export interface Folder {
 export type CommunicationLogParentType = 'property' | 'tenant' | 'maintenance_request' | 'applicant' | 'inspection';
 export interface CommunicationLog {
   id: string;
+  userId?: string;
   parentId: string;
   parentType: CommunicationLogParentType;
   date: string; // ISO string
@@ -242,6 +248,8 @@ export interface CommunicationLog {
 }
 
 export interface UserProfile {
+  // id is implied as the auth.uid, but nice to have explicit if needed
+  id?: string;
   name: string;
   companyName: string;
   email: string;
@@ -289,6 +297,7 @@ export interface ChatSession {
 // Financials
 export interface BankAccount {
   id: string;
+  userId?: string;
   name: string;
   last4: string;
   balance: number;
@@ -299,6 +308,7 @@ export interface BankAccount {
 
 export interface RentPayment {
   id: string;
+  userId?: string;
   tenantId: string;
   propertyId: string;
   date: string; // ISO string date part
@@ -310,6 +320,7 @@ export interface RentPayment {
 
 export interface Expense {
   id: string;
+  userId?: string;
   propertyId: string;
   date: string; // ISO string date part
   category: (typeof ExpenseCategory)[keyof typeof ExpenseCategory];
@@ -435,6 +446,7 @@ export type LandlordStatus = 'Active' | 'Inactive' | 'Pending';
 
 export interface Landlord {
   id: string;
+  userId?: string;
   name: string;
   email: string;
   phone: string;
