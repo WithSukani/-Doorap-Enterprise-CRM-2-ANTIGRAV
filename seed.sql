@@ -168,7 +168,7 @@ INSERT INTO properties (id, address, postcode, type, owner_name, purchase_date, 
 INSERT INTO tenants (id, property_id, name, email, phone, lease_start_date, lease_end_date, rent_amount, security_deposit, deposit_status, notes) VALUES
 ('c0eebc99-9c0b-4ef8-bb6d-6bb9bd380c99', 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380b99', 'Frank Gallagher', 'frank@example.com', '07700 900999', '2023-01-01', '2025-01-01', 2500, 2500, 'Registered', 'Good tenant.');
 
-('exebc99-9c0b-4ef8-bb6d-6bb9bd380x01', 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380b99', 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380b02', 'Maintenance', 450.00, NOW() - INTERVAL '5 days', 'Boiler Service', NULL);
+-- Removed invalid orphaned row
 
 -- ==========================================
 -- SECURITY & ISOLATION SETUP
