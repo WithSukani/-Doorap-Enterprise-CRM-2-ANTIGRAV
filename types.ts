@@ -250,6 +250,7 @@ export interface UserProfile {
   stripeConnectId?: string; // New: For Stripe Connect Integration
   stripeDataFeedEnabled?: boolean; // New
   stripePayoutsEnabled?: boolean; // New
+  role?: 'self_managing' | 'company' | null; // Added role field
 }
 
 // Updated Notification Interface matching DB

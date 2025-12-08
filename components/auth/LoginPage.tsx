@@ -99,6 +99,7 @@ const LoginPage = () => {
                     job_title: jobTitle || null,
                     // If role is company, we assume they might want data feed enabled later
                     stripe_data_feed_enabled: false,
+                    role: role, // Persist the selected role
                 };
 
                 const { error: profileError } = await supabase

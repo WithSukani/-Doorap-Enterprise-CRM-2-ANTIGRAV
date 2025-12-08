@@ -113,7 +113,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             {navItems.filter(item => {
               if (item.view === 'landlords') {
                 // Hide Landlords page if user is NOT a company (i.e. Self Managing)
-                return !!userProfile.companyName;
+                return userProfile.role === 'company';
               }
               return true;
             }).map(item => (
