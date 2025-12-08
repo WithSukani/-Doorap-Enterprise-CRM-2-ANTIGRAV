@@ -72,48 +72,48 @@ const useLocalStorage = <T,>(key: string, initialValue: T): [T, React.Dispatch<R
 
 const App = () => {
   // Existing state
-  const [properties, setProperties] = useLocalStorage<Property[]>('crm_properties', INITIAL_PROPERTIES);
-  const [tenants, setTenants] = useLocalStorage<Tenant[]>('crm_tenants', INITIAL_TENANTS);
-  const [maintenanceRequests, setMaintenanceRequests] = useLocalStorage<MaintenanceRequest[]>('crm_maintenance_requests', INITIAL_MAINTENANCE_REQUESTS);
-  const [reminders, setReminders] = useLocalStorage<Reminder[]>('crm_reminders', INITIAL_REMINDERS);
-  const [slas, setSlas] = useLocalStorage<SLA[]>('crm_slas', INITIAL_SLAS);
-  const [userProfile, setUserProfile] = useLocalStorage<UserProfile>('crm_user_profile', USER_PROFILE_DATA);
-  const [documents, setDocuments] = useLocalStorage<Document[]>('crm_documents', INITIAL_DOCUMENTS);
-  const [communicationLogs, setCommunicationLogs] = useLocalStorage<CommunicationLog[]>('crm_communication_logs', INITIAL_COMMUNICATION_LOGS);
+  const [properties, setProperties] = useLocalStorage<Property[]>('crm_properties_v2', INITIAL_PROPERTIES);
+  const [tenants, setTenants] = useLocalStorage<Tenant[]>('crm_tenants_v2', INITIAL_TENANTS);
+  const [maintenanceRequests, setMaintenanceRequests] = useLocalStorage<MaintenanceRequest[]>('crm_maintenance_requests_v2', INITIAL_MAINTENANCE_REQUESTS);
+  const [reminders, setReminders] = useLocalStorage<Reminder[]>('crm_reminders_v2', INITIAL_REMINDERS);
+  const [slas, setSlas] = useLocalStorage<SLA[]>('crm_slas_v2', INITIAL_SLAS);
+  const [userProfile, setUserProfile] = useLocalStorage<UserProfile>('crm_user_profile_v2', USER_PROFILE_DATA);
+  const [documents, setDocuments] = useLocalStorage<Document[]>('crm_documents_v2', INITIAL_DOCUMENTS);
+  const [communicationLogs, setCommunicationLogs] = useLocalStorage<CommunicationLog[]>('crm_communication_logs_v2', INITIAL_COMMUNICATION_LOGS);
 
-  const [chatSessions, setChatSessions] = useLocalStorage<Record<string, ChatSession>>('crm_chat_sessions', INITIAL_CHAT_SESSIONS);
+  const [chatSessions, setChatSessions] = useLocalStorage<Record<string, ChatSession>>('crm_chat_sessions_v2', INITIAL_CHAT_SESSIONS);
 
   // New state for additional features
-  const [rentPayments, setRentPayments] = useLocalStorage<RentPayment[]>('crm_rent_payments', INITIAL_RENT_PAYMENTS);
-  const [expenses, setExpenses] = useLocalStorage<Expense[]>('crm_expenses', INITIAL_EXPENSES);
-  const [documentTemplates, setDocumentTemplates] = useLocalStorage<DocumentTemplate[]>('crm_document_templates', INITIAL_DOCUMENT_TEMPLATES);
-  const [tasks, setTasks] = useLocalStorage<Task[]>('crm_tasks', INITIAL_TASKS);
-  const [vacancies, setVacancies] = useLocalStorage<Vacancy[]>('crm_vacancies', INITIAL_VACANCIES);
-  const [applicants, setApplicants] = useLocalStorage<Applicant[]>('crm_applicants', INITIAL_APPLICANTS);
-  const [inspections, setInspections] = useLocalStorage<Inspection[]>('crm_inspections', INITIAL_INSPECTIONS);
-  const [inspectionChecklistItems, setInspectionChecklistItems] = useLocalStorage<InspectionChecklistItem[]>('crm_inspection_checklist_items', INITIAL_INSPECTION_CHECKLIST_ITEMS);
-  const [landlords, setLandlords] = useLocalStorage<Landlord[]>('crm_landlords', INITIAL_LANDLORDS);
-  const [approvalRequests, setApprovalRequests] = useLocalStorage<ApprovalRequest[]>('crm_approval_requests', INITIAL_APPROVALS);
-  const [folders, setFolders] = useLocalStorage<Folder[]>('crm_folders', []);
-  const [meterReadings, setMeterReadings] = useLocalStorage<MeterReading[]>('crm_meter_readings', INITIAL_METER_READINGS);
-  const [inventoryChecks, setInventoryChecks] = useLocalStorage<InventoryCheck[]>('crm_inventory_checks', INITIAL_INVENTORY_CHECKS);
-  const [emailSettings, setEmailSettings] = useLocalStorage<any>('crm_email_settings', null);
-  const [teamMembers, setTeamMembers] = useLocalStorage<TeamMember[]>('crm_team_members', INITIAL_TEAM_MEMBERS);
+  const [rentPayments, setRentPayments] = useLocalStorage<RentPayment[]>('crm_rent_payments_v2', INITIAL_RENT_PAYMENTS);
+  const [expenses, setExpenses] = useLocalStorage<Expense[]>('crm_expenses_v2', INITIAL_EXPENSES);
+  const [documentTemplates, setDocumentTemplates] = useLocalStorage<DocumentTemplate[]>('crm_document_templates_v2', INITIAL_DOCUMENT_TEMPLATES);
+  const [tasks, setTasks] = useLocalStorage<Task[]>('crm_tasks_v2', INITIAL_TASKS);
+  const [vacancies, setVacancies] = useLocalStorage<Vacancy[]>('crm_vacancies_v2', INITIAL_VACANCIES);
+  const [applicants, setApplicants] = useLocalStorage<Applicant[]>('crm_applicants_v2', INITIAL_APPLICANTS);
+  const [inspections, setInspections] = useLocalStorage<Inspection[]>('crm_inspections_v2', INITIAL_INSPECTIONS);
+  const [inspectionChecklistItems, setInspectionChecklistItems] = useLocalStorage<InspectionChecklistItem[]>('crm_inspection_checklist_items_v2', INITIAL_INSPECTION_CHECKLIST_ITEMS);
+  const [landlords, setLandlords] = useLocalStorage<Landlord[]>('crm_landlords_v2', INITIAL_LANDLORDS);
+  const [approvalRequests, setApprovalRequests] = useLocalStorage<ApprovalRequest[]>('crm_approval_requests_v2', INITIAL_APPROVALS);
+  const [folders, setFolders] = useLocalStorage<Folder[]>('crm_folders_v2', []);
+  const [meterReadings, setMeterReadings] = useLocalStorage<MeterReading[]>('crm_meter_readings_v2', INITIAL_METER_READINGS);
+  const [inventoryChecks, setInventoryChecks] = useLocalStorage<InventoryCheck[]>('crm_inventory_checks_v2', INITIAL_INVENTORY_CHECKS);
+  const [emailSettings, setEmailSettings] = useLocalStorage<any>('crm_email_settings_v2', null);
+  const [teamMembers, setTeamMembers] = useLocalStorage<TeamMember[]>('crm_team_members_v2', INITIAL_TEAM_MEMBERS);
 
   // Financial Advanced
-  const [recurringPayments, setRecurringPayments] = useLocalStorage<RecurringPayment[]>('crm_recurring_payments', INITIAL_RECURRING_PAYMENTS);
-  const [paymentLinks, setPaymentLinks] = useLocalStorage<PaymentLink[]>('crm_payment_links', INITIAL_PAYMENT_LINKS);
-  const [bankAccounts, setBankAccounts] = useLocalStorage<BankAccount[]>('crm_bank_accounts', INITIAL_BANK_ACCOUNTS);
-  const [portalSettings, setPortalSettings] = useLocalStorage<any[]>('crm_portal_settings', []);
-  const [integrationSettings, setIntegrationSettings] = useLocalStorage<any[]>('crm_integration_settings', []);
+  const [recurringPayments, setRecurringPayments] = useLocalStorage<RecurringPayment[]>('crm_recurring_payments_v2', INITIAL_RECURRING_PAYMENTS);
+  const [paymentLinks, setPaymentLinks] = useLocalStorage<PaymentLink[]>('crm_payment_links_v2', INITIAL_PAYMENT_LINKS);
+  const [bankAccounts, setBankAccounts] = useLocalStorage<BankAccount[]>('crm_bank_accounts_v2', INITIAL_BANK_ACCOUNTS);
+  const [portalSettings, setPortalSettings] = useLocalStorage<any[]>('crm_portal_settings_v2', []);
+  const [integrationSettings, setIntegrationSettings] = useLocalStorage<any[]>('crm_integration_settings_v2', []);
 
 
 
   // Dori State
-  const [doriInteractions, setDoriInteractions] = useLocalStorage<DoriInteraction[]>('crm_dori_interactions', INITIAL_DORI_LOGS);
-  const [doriActions, setDoriActions] = useLocalStorage<DoriAction[]>('crm_dori_actions', INITIAL_DORI_ACTIONS);
-  const [automationWorkflows, setAutomationWorkflows] = useLocalStorage<AutomationWorkflow[]>('crm_automation_workflows', INITIAL_WORKFLOWS);
-  const [emergencies, setEmergencies] = useLocalStorage<EmergencyItem[]>('crm_emergencies', INITIAL_EMERGENCIES);
+  const [doriInteractions, setDoriInteractions] = useLocalStorage<DoriInteraction[]>('crm_dori_interactions_v2', INITIAL_DORI_LOGS);
+  const [doriActions, setDoriActions] = useLocalStorage<DoriAction[]>('crm_dori_actions_v2', INITIAL_DORI_ACTIONS);
+  const [automationWorkflows, setAutomationWorkflows] = useLocalStorage<AutomationWorkflow[]>('crm_automation_workflows_v2', INITIAL_WORKFLOWS);
+  const [emergencies, setEmergencies] = useLocalStorage<EmergencyItem[]>('crm_emergencies_v2', INITIAL_EMERGENCIES);
   // Updated key to force refresh of mock data
   const [doriExecutions, setDoriExecutions] = useLocalStorage<DoriExecution[]>('crm_dori_executions_v2', INITIAL_DORI_EXECUTIONS);
 
