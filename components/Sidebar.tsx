@@ -133,6 +133,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           <button
             onClick={async () => {
               try {
+                // Clear local storage to prevent data leakage between sessions
+                localStorage.clear();
                 const { error } = await supabase.auth.signOut();
                 if (error) alert('Error logging out: ' + error.message);
               } catch (err) {

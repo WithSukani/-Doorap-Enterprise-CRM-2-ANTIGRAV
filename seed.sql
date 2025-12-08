@@ -168,5 +168,79 @@ INSERT INTO properties (id, address, postcode, type, owner_name, purchase_date, 
 INSERT INTO tenants (id, property_id, name, email, phone, lease_start_date, lease_end_date, rent_amount, security_deposit, deposit_status, notes) VALUES
 ('c0eebc99-9c0b-4ef8-bb6d-6bb9bd380c99', 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380b99', 'Frank Gallagher', 'frank@example.com', '07700 900999', '2023-01-01', '2025-01-01', 2500, 2500, 'Registered', 'Good tenant.');
 
-INSERT INTO expenses (id, property_id, landlord_id, category, amount, date, description, invoice_url) VALUES 
 ('exebc99-9c0b-4ef8-bb6d-6bb9bd380x01', 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380b99', 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380b02', 'Maintenance', 450.00, NOW() - INTERVAL '5 days', 'Boiler Service', NULL);
+
+-- ==========================================
+-- SECURITY & ISOLATION SETUP
+-- ==========================================
+
+-- 1. Ensure Role Column Exists
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS role text DEFAULT 'self_managing';
+
+-- 2. Enable RLS on All Sensitive Tables
+ALTER TABLE properties ENABLE ROW LEVEL SECURITY;
+ALTER TABLE landlords ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE maintenance_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reminders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rent_payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
+
+-- 3. Create Isolation Policies (Users see only their own data)
+-- Note: We use "auth.uid() = user_id" as the standard check.
+
+-- Properties
+DROP POLICY IF EXISTS "Users can only see their own properties" ON properties;
+CREATE POLICY "Users can only see their own properties" ON properties USING (auth.uid() = user_id);
+
+-- Landlords
+DROP POLICY IF EXISTS "Users can only see their own landlords" ON landlords;
+CREATE POLICY "Users can only see their own landlords" ON landlords USING (auth.uid() = user_id);
+
+-- Tenants
+DROP POLICY IF EXISTS "Users can only see their own tenants" ON tenants;
+CREATE POLICY "Users can only see their own tenants" ON tenants USING (auth.uid() = user_id);
+
+-- Maintenance
+DROP POLICY IF EXISTS "Users can only see their own maintenance requests" ON maintenance_requests;
+CREATE POLICY "Users can only see their own maintenance requests" ON maintenance_requests USING (auth.uid() = user_id);
+
+-- Reminders
+DROP POLICY IF EXISTS "Users can only see their own reminders" ON reminders;
+CREATE POLICY "Users can only see their own reminders" ON reminders USING (auth.uid() = user_id);
+
+-- Documents
+DROP POLICY IF EXISTS "Users can only see their own documents" ON documents;
+CREATE POLICY "Users can only see their own documents" ON documents USING (auth.uid() = user_id);
+
+-- Notifications
+DROP POLICY IF EXISTS "Users can only see their own notifications" ON notifications;
+CREATE POLICY "Users can only see their own notifications" ON notifications USING (auth.uid() = user_id);
+
+-- Expenses
+DROP POLICY IF EXISTS "Users can only see their own expenses" ON expenses;
+CREATE POLICY "Users can only see their own expenses" ON expenses USING (auth.uid() = user_id);
+
+-- User Profiles (Strict: only see your own profile)
+DROP POLICY IF EXISTS "Users can only see their own profile" ON user_profiles;
+CREATE POLICY "Users can only see their own profile" ON user_profiles USING (id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can upsert their own profile" ON user_profiles;
+CREATE POLICY "Users can upsert their own profile" ON user_profiles WITH CHECK (id = auth.uid());
+
+-- Chat Sessions
+DROP POLICY IF EXISTS "Users can only see their own chat sessions" ON chat_sessions;
+CREATE POLICY "Users can only see their own chat sessions" ON chat_sessions USING (auth.uid() = user_id);
+
+-- Chat Messages
+DROP POLICY IF EXISTS "Users can only see their own chat messages" ON chat_messages;
+CREATE POLICY "Users can only see their own chat messages" ON chat_messages USING (auth.uid() = user_id);
+
+-- ==========================================
+-- END SECURITY SETUP
+-- ==========================================
