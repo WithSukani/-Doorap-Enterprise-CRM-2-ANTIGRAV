@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Property, Tenant, MaintenanceRequest, Document, CommunicationLog, DocumentTemplate, UserProfile, MeterReading, Folder } from '../../types';
+import { Property, Tenant, MaintenanceRequest, Document, CommunicationLog, DocumentTemplate, UserProfile, MeterReading, Folder, Landlord } from '../../types';
 import PageHeader from '../PageHeader';
 import Button from '../common/Button';
 import PropertyForm from '../forms/PropertyForm';
@@ -92,6 +92,7 @@ interface PropertiesPageProps {
   meterReadings?: MeterReading[];
   onAddMeterReading?: (reading: MeterReading) => void;
   folders: Folder[];
+  landlords: Landlord[];
 }
 
 const PropertiesPage: React.FC<PropertiesPageProps> = ({
@@ -100,7 +101,7 @@ const PropertiesPage: React.FC<PropertiesPageProps> = ({
   documents, addDocument, deleteDocument,
   communicationLogs, addCommunicationLog, deleteCommunicationLog,
   documentTemplates, userProfile,
-  meterReadings, onAddMeterReading, folders
+  meterReadings, onAddMeterReading, folders, landlords
 }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -320,6 +321,7 @@ const PropertiesPage: React.FC<PropertiesPageProps> = ({
           onClose={() => setIsFormOpen(false)}
           onSubmit={handleSubmitForm}
           initialData={editingProperty}
+          landlords={landlords}
         />
       )}
       {viewingProperty && (

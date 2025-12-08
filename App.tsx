@@ -608,7 +608,7 @@ const App = () => {
                 tenants={tenants} maintenanceRequests={maintenanceRequests}
                 documents={documents} addDocument={addDocument} deleteDocument={deleteDocument}
                 communicationLogs={communicationLogs} addCommunicationLog={addCommunicationLog} deleteCommunicationLog={deleteCommunicationLog}
-                documentTemplates={documentTemplates} userProfile={userProfile} folders={folders}
+                documentTemplates={documentTemplates} userProfile={userProfile} folders={folders} landlords={landlords}
               />}
               />
               <Route path="/tenants" element={<TenantsPage
