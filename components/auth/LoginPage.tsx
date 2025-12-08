@@ -130,9 +130,12 @@ const LoginPage = () => {
                 {/* Left Side - Testimonials (Hidden on mobile) */}
                 <div className="hidden lg:flex w-1/2 bg-zinc-50 border-r border-zinc-200 p-12 flex-col justify-between">
                     <div>
-                        <div className="flex items-center gap-2 mb-12">
-                            <div className="w-8 h-8 bg-black rounded-lg"></div>
-                            <span className="text-xl font-bold tracking-tight">Doorap</span>
+                        <div className="flex items-center mb-12">
+                            <img
+                                src="https://raw.githubusercontent.com/WithSukani/DoorapLogo/4410b95b0d102d0b556e4ec9e42200a697751202/Black%20.png"
+                                alt="Doorap Logo"
+                                className="h-10 w-auto object-contain"
+                            />
                         </div>
 
                         <div className="max-w-md">
@@ -541,11 +544,12 @@ const LoginPage = () => {
             {/* Left Side - Testimonials */}
             <div className="hidden lg:flex w-1/2 bg-zinc-50 border-r border-zinc-200 p-12 flex-col justify-between">
                 <div>
-                    <div className="flex items-center gap-2 mb-12">
-                        <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-                            <div className="w-4 h-4 bg-white rounded-sm opacity-50"></div>
-                        </div>
-                        <span className="text-xl font-bold tracking-tight">Doorap</span>
+                    <div className="flex items-center mb-12">
+                        <img
+                            src="https://raw.githubusercontent.com/WithSukani/DoorapLogo/4410b95b0d102d0b556e4ec9e42200a697751202/Black%20.png"
+                            alt="Doorap Logo"
+                            className="h-10 w-auto object-contain"
+                        />
                     </div>
 
                     <div className="max-w-md">

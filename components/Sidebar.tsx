@@ -33,8 +33,11 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, view, currentView, onCli
 
 const SimpleLogo = () => (
   <div className="flex items-center gap-3 px-2">
-    <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white font-bold text-lg">D</div>
-    <span className="font-bold text-lg text-zinc-900 tracking-tight">Doorap</span>
+    <img
+      src="https://raw.githubusercontent.com/WithSukani/DoorapLogo/4410b95b0d102d0b556e4ec9e42200a697751202/Black%20.png"
+      alt="Doorap Logo"
+      className="h-8 w-auto object-contain"
+    />
   </div>
 );
 
