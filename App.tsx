@@ -177,6 +177,7 @@ const App = () => {
       setAutomationWorkflows(dbWorkflows || []);
       setDoriInteractions(dbDoriLogs || []);
 
+      console.log('[App.tsx] Updating userProfile state from DB:', dbUserProfile);
       setUserProfile(dbUserProfile || { name: '', companyName: '', email: '', phone: '' } as UserProfile);
       setTeamMembers(dbTeamMembers || []);
       setTasks(dbTasks || []);
@@ -219,7 +220,7 @@ const App = () => {
       }
 
     }
-  }, [dbLoading]);
+  }, [dbLoading, dbUserProfile, dbProperties, dbTenants, dbLandlords, dbMaintenance]);
 
   useEffect(() => {
     const path = location.pathname.substring(1).split('?')[0] || 'dashboard';
@@ -682,7 +683,43 @@ const App = () => {
               />}
               />
               <Route path="/settings" element={<SettingsPage
-                userProfile={userProfile} updateUserProfile={setUserProfile}
+                userProfile={userProfile}
+                updateUserProfile={async (updatedProfile: UserProfile) => {
+                  try {
+                    // 1. Optimistic Update
+                    setUserProfile(updatedProfile);
+
+                    // 2. Persist to Supabase
+                    const dbProfile = {
+                      id: session?.user?.id,
+                      name: updatedProfile.name,
+                      email: updatedProfile.email,
+                      phone: updatedProfile.phone,
+                      role: updatedProfile.role,
+                      company_name: updatedProfile.companyName,
+                      avatar_url: updatedProfile.avatarUrl,
+                      job_title: updatedProfile.jobTitle,
+                      company_address: updatedProfile.companyAddress,
+                      company_reg_no: updatedProfile.companyRegNo,
+                      company_vat_number: updatedProfile.companyVatNumber,
+                      website: updatedProfile.website,
+                      stripe_connect_id: updatedProfile.stripeConnectId,
+                      stripe_data_feed_enabled: updatedProfile.stripeDataFeedEnabled,
+                      stripe_payouts_enabled: updatedProfile.stripePayoutsEnabled
+                    };
+
+                    const { error } = await supabase
+                      .from('user_profiles')
+                      .upsert(dbProfile);
+
+                    if (error) throw error;
+                    console.log('User profile synced to Supabase');
+                  } catch (err) {
+                    console.error('Failed to sync user profile:', err);
+                    alert('Failed to save profile changes to the server. Please try again.');
+                    // Revert? (Optional: fetch fresh data)
+                  }
+                }}
                 emailSettings={emailSettings} setEmailSettings={setEmailSettings}
                 teamMembers={teamMembers} addTeamMember={addTeamMember} updateTeamMember={updateTeamMember} deleteTeamMember={deleteTeamMember}
                 landlords={landlords} updateLandlord={updateLandlord}

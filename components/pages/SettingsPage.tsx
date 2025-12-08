@@ -14,7 +14,7 @@ import {
 
 interface SettingsPageProps {
     userProfile: UserProfile;
-    updateUserProfile: (profile: UserProfile) => void;
+    updateUserProfile: (profile: UserProfile) => Promise<void>;
     emailSettings: EmailIntegrationSettings | null;
     setEmailSettings: (settings: EmailIntegrationSettings) => void;
     teamMembers: TeamMember[];
@@ -41,6 +41,16 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 
     // Profile State
     const [profileForm, setProfileForm] = useState(userProfile);
+    const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+    // Sync form with prop when data loads
+    React.useEffect(() => {
+        console.log('[SettingsPage] Received userProfile prop:', userProfile);
+        if (userProfile) {
+            setProfileForm(userProfile);
+            console.log('[SettingsPage] Updated profileForm state:', userProfile);
+        }
+    }, [userProfile]);
 
     // Team Modal State
     const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
@@ -68,9 +78,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 
     // --- Handlers ---
 
-    const handleProfileSave = () => {
+    const handleProfileSave = async () => {
+        setIsSavingProfile(true);
         // If saving company details, we are technically updating user profile
-        updateUserProfile(profileForm);
+        await updateUserProfile(profileForm);
+        setIsSavingProfile(false);
         alert('Profile & Company details updated successfully.');
     };
 
@@ -202,6 +214,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             <div className="flex-1">
                 <PageHeader title={tabs.find(t => t.id === activeTab)?.label || 'Settings'} subtitle="Manage your account and preferences." />
 
+
                 {/* Profile Tab */}
                 {activeTab === 'profile' && (
                     <div className="bg-white p-6 rounded-lg border border-zinc-200 shadow-sm max-w-2xl">
@@ -212,12 +225,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <Input label="Full Name" name="name" value={profileForm.name} onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })} />
-                                <Input label="Job Title" name="title" placeholder="e.g. Senior Property Manager" />
+                                <Input label="Job Title" name="title" value={profileForm.jobTitle || ''} onChange={(e) => setProfileForm({ ...profileForm, jobTitle: e.target.value })} placeholder="e.g. Senior Property Manager" />
                             </div>
                             <Input label="Email Address" name="email" value={profileForm.email} onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })} />
                             <Input label="Phone Number" name="phone" value={profileForm.phone || ''} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} />
                             <div className="pt-4 flex justify-end">
-                                <Button onClick={handleProfileSave}>Save Profile</Button>
+                                <Button onClick={handleProfileSave} isLoading={isSavingProfile}>Save Profile</Button>
                             </div>
                         </div>
                     </div>
@@ -228,13 +241,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                     <div className="bg-white p-6 rounded-lg border border-zinc-200 shadow-sm max-w-2xl">
                         <div className="space-y-4">
                             <Input label="Company Name" name="companyName" value={profileForm.companyName} onChange={(e) => setProfileForm({ ...profileForm, companyName: e.target.value })} />
-                            <Input label="Registered Address" name="address" placeholder="123 High St, London" />
+                            <Input label="Registered Address" name="address" value={profileForm.companyAddress || ''} onChange={(e) => setProfileForm({ ...profileForm, companyAddress: e.target.value })} placeholder="123 High St, London" />
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Input label="Company Reg No." name="regNo" placeholder="Optional" />
-                                <Input label="VAT Number" name="vat" placeholder="Optional" />
+                                <Input label="Company Reg No." name="regNo" value={profileForm.companyRegNo || ''} onChange={(e) => setProfileForm({ ...profileForm, companyRegNo: e.target.value })} placeholder="Optional" />
+                                <Input label="VAT Number" name="vat" value={profileForm.companyVatNumber || ''} onChange={(e) => setProfileForm({ ...profileForm, companyVatNumber: e.target.value })} placeholder="Optional" />
                             </div>
                             <div className="pt-4 flex justify-end">
-                                <Button onClick={handleProfileSave}>Update Company Details</Button>
+                                <Button onClick={handleProfileSave} isLoading={isSavingProfile}>Update Company Details</Button>
                             </div>
                         </div>
                     </div>

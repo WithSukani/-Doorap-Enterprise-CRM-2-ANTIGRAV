@@ -259,6 +259,11 @@ export interface UserProfile {
   stripeDataFeedEnabled?: boolean; // New
   stripePayoutsEnabled?: boolean; // New
   role?: 'self_managing' | 'company' | null; // Added role field
+  jobTitle?: string;
+  companyAddress?: string;
+  companyRegNo?: string;
+  companyVatNumber?: string;
+  website?: string;
 }
 
 // Updated Notification Interface matching DB

@@ -124,7 +124,7 @@ export const useDoorapData = (session: any) => {
                     supabase.from('automation_workflows').select('*'),
                     supabase.from('dori_interactions').select('*'),
                     supabase.from('notifications').select('*'),
-                    supabase.from('user_profiles').select('*').eq('id', session.user.id).single(), // Strict filter by auth ID
+                    supabase.from('user_profiles').select('*').eq('id', session.user.id), // Strict filter by auth ID - removed .single() to keep array format for mapKeysToCamelCase
                     supabase.from('team_members').select('*'),
                     // New tables
                     supabase.from('tasks').select('*'),
@@ -171,9 +171,13 @@ export const useDoorapData = (session: any) => {
                 setDoriInteractions(mapKeysToCamelCase(results[13].data || []));
                 setNotifications(mapKeysToCamelCase(results[14].data || []));
 
+                console.log('[useDoorapData] Raw Profile Data:', results[15].data);
                 if (results[15].data && results[15].data.length > 0) {
-                    setUserProfile(mapKeysToCamelCase(results[15].data)[0]);
+                    const mappedProfile = mapKeysToCamelCase(results[15].data)[0];
+                    console.log('[useDoorapData] Mapped Profile:', mappedProfile);
+                    setUserProfile(mappedProfile);
                 } else {
+                    console.warn('[useDoorapData] No profile found for user:', session.user.id);
                     // Fallback mock profile if DB empty
                     // Fallback to empty if DB empty
                     setUserProfile({
