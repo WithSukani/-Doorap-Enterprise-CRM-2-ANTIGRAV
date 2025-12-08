@@ -249,7 +249,7 @@ CREATE POLICY "Users can only see their own chat messages" ON chat_messages USIN
 -- This script adds a `user_id` column to all data tables to support data isolation.
 -- ==============================================================================
 
--- 1. Add user_id column to tables
+-- 1. Add user_id column to tables (Safe to run multiple times)
 ALTER TABLE properties ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
 ALTER TABLE landlords ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
@@ -278,178 +278,46 @@ ALTER TABLE inventory_checks ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES au
 ALTER TABLE document_templates ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
 ALTER TABLE payment_links ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
 ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
--- notifications already has user_id, but lets make sure
 ALTER TABLE notifications ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
 
--- 2. IMPORTANT: Backfill existing data
--- Since we don't know your specific User ID, we cannot automatically assign these rows to you.
--- RUN THE FOLLOWING COMMAND MANUALLY IN SUPABASE SQL EDITOR, REPLACING THE ID:
--- UPDATE properties SET user_id = 'YOUR_USER_ID_HERE' WHERE user_id IS NULL;
--- (Repeat for all tables above if you want to keep data visible)
+-- 2. ENABLE RLS
+DO $$ 
+DECLARE 
+    tbl text; 
+BEGIN
+    FOR tbl IN 
+        SELECT tablename FROM pg_tables 
+        WHERE schemaname = 'public' 
+    LOOP
+        EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', tbl);
+    END LOOP;
+END $$;
 
--- 3. Enable RLS on all tables
-ALTER TABLE properties ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
-ALTER TABLE landlords ENABLE ROW LEVEL SECURITY;
-ALTER TABLE maintenance_requests ENABLE ROW LEVEL SECURITY;
-ALTER TABLE reminders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
-ALTER TABLE communication_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE bank_accounts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE rent_payments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE recurring_payments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE slas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE automation_workflows ENABLE ROW LEVEL SECURITY;
-ALTER TABLE dori_interactions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE dori_actions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE emergencies ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE vacancies ENABLE ROW LEVEL SECURITY;
-ALTER TABLE applicants ENABLE ROW LEVEL SECURITY;
-ALTER TABLE inspections ENABLE ROW LEVEL SECURITY;
-ALTER TABLE inspection_checklist_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE approval_requests ENABLE ROW LEVEL SECURITY;
-ALTER TABLE folders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE meter_readings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE inventory_checks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE document_templates ENABLE ROW LEVEL SECURITY;
-ALTER TABLE payment_links ENABLE ROW LEVEL SECURITY;
-ALTER TABLE chat_sessions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+-- 3. APPLY POLICIES (Safe Loop)
+-- This loop applies "user_id = auth.uid()" policy to all tables EXCEPT user_profiles
+DO $$ 
+DECLARE 
+    tbl text; 
+BEGIN
+    FOR tbl IN 
+        SELECT tablename FROM pg_tables 
+        WHERE schemaname = 'public' 
+        AND tablename != 'user_profiles' -- Explicitly exclude user_profiles
+    LOOP
+        -- Only create policy if user_id column actually exists to be safe
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = tbl AND column_name = 'user_id') THEN
+            EXECUTE format('DROP POLICY IF EXISTS "Users can CRUD own %I" ON %I', tbl, tbl);
+            EXECUTE format('CREATE POLICY "Users can CRUD own %I" ON %I USING (auth.uid() = user_id)', tbl, tbl);
+        END IF;
+    END LOOP;
+END $$;
 
--- 4. Create/Refresh RLS Policies
--- We drop existing policies to ensure clean state
-
--- GENERIC POLICY FUNCTION (Optional optimization, but explicit policies are safer for clarity)
-
--- PROPERTIES
-DROP POLICY IF EXISTS "Users can select own properties" ON properties;
-DROP POLICY IF EXISTS "Users can insert own properties" ON properties;
-DROP POLICY IF EXISTS "Users can update own properties" ON properties;
-DROP POLICY IF EXISTS "Users can delete own properties" ON properties;
-CREATE POLICY "Users can select own properties" ON properties FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert own properties" ON properties FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update own properties" ON properties FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete own properties" ON properties FOR DELETE USING (auth.uid() = user_id);
-
--- TENANTS
-DROP POLICY IF EXISTS "Users can CRUD own tenants" ON tenants;
-CREATE POLICY "Users can CRUD own tenants" ON tenants USING (auth.uid() = user_id);
-
--- LANDLORDS
-DROP POLICY IF EXISTS "Users can CRUD own landlords" ON landlords;
-CREATE POLICY "Users can CRUD own landlords" ON landlords USING (auth.uid() = user_id);
-
--- MAINTENANCE REQUESTS
-DROP POLICY IF EXISTS "Users can CRUD own maintenance" ON maintenance_requests;
-CREATE POLICY "Users can CRUD own maintenance" ON maintenance_requests USING (auth.uid() = user_id);
-
--- REMINDERS
-DROP POLICY IF EXISTS "Users can CRUD own reminders" ON reminders;
-CREATE POLICY "Users can CRUD own reminders" ON reminders USING (auth.uid() = user_id);
-
--- DOCUMENTS
-DROP POLICY IF EXISTS "Users can CRUD own documents" ON documents;
-CREATE POLICY "Users can CRUD own documents" ON documents USING (auth.uid() = user_id);
-
--- COMMUNICATION LOGS
-DROP POLICY IF EXISTS "Users can CRUD own communication_logs" ON communication_logs;
-CREATE POLICY "Users can CRUD own communication_logs" ON communication_logs USING (auth.uid() = user_id);
-
--- BANK ACCOUNTS
-DROP POLICY IF EXISTS "Users can CRUD own bank_accounts" ON bank_accounts;
-CREATE POLICY "Users can CRUD own bank_accounts" ON bank_accounts USING (auth.uid() = user_id);
-
--- RENT PAYMENTS
-DROP POLICY IF EXISTS "Users can CRUD own rent_payments" ON rent_payments;
-CREATE POLICY "Users can CRUD own rent_payments" ON rent_payments USING (auth.uid() = user_id);
-
--- EXPENSES
-DROP POLICY IF EXISTS "Users can CRUD own expenses" ON expenses;
-CREATE POLICY "Users can CRUD own expenses" ON expenses USING (auth.uid() = user_id);
-
--- RECURRING PAYMENTS
-DROP POLICY IF EXISTS "Users can CRUD own recurring_payments" ON recurring_payments;
-CREATE POLICY "Users can CRUD own recurring_payments" ON recurring_payments USING (auth.uid() = user_id);
-
--- SLAS
-DROP POLICY IF EXISTS "Users can CRUD own slas" ON slas;
-CREATE POLICY "Users can CRUD own slas" ON slas USING (auth.uid() = user_id);
-
--- AUTOMATION WORKFLOWS
-DROP POLICY IF EXISTS "Users can CRUD own automation_workflows" ON automation_workflows;
-CREATE POLICY "Users can CRUD own automation_workflows" ON automation_workflows USING (auth.uid() = user_id);
-
--- DORI INTERACTIONS
-DROP POLICY IF EXISTS "Users can CRUD own dori_interactions" ON dori_interactions;
-CREATE POLICY "Users can CRUD own dori_interactions" ON dori_interactions USING (auth.uid() = user_id);
-
--- DORI ACTIONS
-DROP POLICY IF EXISTS "Users can CRUD own dori_actions" ON dori_actions;
-CREATE POLICY "Users can CRUD own dori_actions" ON dori_actions USING (auth.uid() = user_id);
-
--- EMERGENCIES
-DROP POLICY IF EXISTS "Users can CRUD own emergencies" ON emergencies;
-CREATE POLICY "Users can CRUD own emergencies" ON emergencies USING (auth.uid() = user_id);
-
--- TASKS
-DROP POLICY IF EXISTS "Users can CRUD own tasks" ON tasks;
-CREATE POLICY "Users can CRUD own tasks" ON tasks USING (auth.uid() = user_id);
-
--- VACANCIES
-DROP POLICY IF EXISTS "Users can CRUD own vacancies" ON vacancies;
-CREATE POLICY "Users can CRUD own vacancies" ON vacancies USING (auth.uid() = user_id);
-
--- APPLICANTS
-DROP POLICY IF EXISTS "Users can CRUD own applicants" ON applicants;
-CREATE POLICY "Users can CRUD own applicants" ON applicants USING (auth.uid() = user_id);
-
--- INSPECTIONS
-DROP POLICY IF EXISTS "Users can CRUD own inspections" ON inspections;
-CREATE POLICY "Users can CRUD own inspections" ON inspections USING (auth.uid() = user_id);
-
--- INSPECTION CHECKLIST ITEMS
-DROP POLICY IF EXISTS "Users can CRUD own inspection_checklist_items" ON inspection_checklist_items;
-CREATE POLICY "Users can CRUD own inspection_checklist_items" ON inspection_checklist_items USING (auth.uid() = user_id);
-
--- APPROVAL REQUESTS
-DROP POLICY IF EXISTS "Users can CRUD own approval_requests" ON approval_requests;
-CREATE POLICY "Users can CRUD own approval_requests" ON approval_requests USING (auth.uid() = user_id);
-
--- Folders
-DROP POLICY IF EXISTS "Users can CRUD own folders" ON folders;
-CREATE POLICY "Users can CRUD own folders" ON folders USING (auth.uid() = user_id);
-
--- METER READINGS
-DROP POLICY IF EXISTS "Users can CRUD own meter_readings" ON meter_readings;
-CREATE POLICY "Users can CRUD own meter_readings" ON meter_readings USING (auth.uid() = user_id);
-
--- INVENTORY CHECKS
-DROP POLICY IF EXISTS "Users can CRUD own inventory_checks" ON inventory_checks;
-CREATE POLICY "Users can CRUD own inventory_checks" ON inventory_checks USING (auth.uid() = user_id);
-
--- DOCUMENT TEMPLATES
-DROP POLICY IF EXISTS "Users can CRUD own document_templates" ON document_templates;
-CREATE POLICY "Users can CRUD own document_templates" ON document_templates USING (auth.uid() = user_id);
-
--- PAYMENT LINKS
-DROP POLICY IF EXISTS "Users can CRUD own payment_links" ON payment_links;
-CREATE POLICY "Users can CRUD own payment_links" ON payment_links USING (auth.uid() = user_id);
-
--- CHAT SESSIONS
-DROP POLICY IF EXISTS "Users can CRUD own chat_sessions" ON chat_sessions;
-CREATE POLICY "Users can CRUD own chat_sessions" ON chat_sessions USING (auth.uid() = user_id);
-
--- NOTIFICATIONS
-DROP POLICY IF EXISTS "Users can CRUD own notifications" ON notifications;
-CREATE POLICY "Users can CRUD own notifications" ON notifications USING (auth.uid() = user_id);
-
--- USER PROFILES (Strict)
+-- 4. User Profiles Policy (Explicit)
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can CRUD own profile" ON user_profiles;
 CREATE POLICY "Users can CRUD own profile" ON user_profiles USING (auth.uid() = id);
 
--- 5. Helper Function to auto-assign user_id on insert
+-- 5. Auto-assign user_id Trigger
 CREATE OR REPLACE FUNCTION public.handle_new_user_row()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -460,119 +328,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 6. apply Triggers to All Tables
--- Properties
-DROP TRIGGER IF EXISTS on_property_insert ON properties;
-CREATE TRIGGER on_property_insert BEFORE INSERT ON properties FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Tenants
-DROP TRIGGER IF EXISTS on_tenant_insert ON tenants;
-CREATE TRIGGER on_tenant_insert BEFORE INSERT ON tenants FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Landlords
-DROP TRIGGER IF EXISTS on_landlord_insert ON landlords;
-CREATE TRIGGER on_landlord_insert BEFORE INSERT ON landlords FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Maintenance Requests
-DROP TRIGGER IF EXISTS on_maintenance_insert ON maintenance_requests;
-CREATE TRIGGER on_maintenance_insert BEFORE INSERT ON maintenance_requests FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Reminders
-DROP TRIGGER IF EXISTS on_reminder_insert ON reminders;
-CREATE TRIGGER on_reminder_insert BEFORE INSERT ON reminders FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Documents
-DROP TRIGGER IF EXISTS on_document_insert ON documents;
-CREATE TRIGGER on_document_insert BEFORE INSERT ON documents FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Communication Logs
-DROP TRIGGER IF EXISTS on_comm_log_insert ON communication_logs;
-CREATE TRIGGER on_comm_log_insert BEFORE INSERT ON communication_logs FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Bank Accounts
-DROP TRIGGER IF EXISTS on_bank_account_insert ON bank_accounts;
-CREATE TRIGGER on_bank_account_insert BEFORE INSERT ON bank_accounts FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Rent Payments
-DROP TRIGGER IF EXISTS on_rent_payment_insert ON rent_payments;
-CREATE TRIGGER on_rent_payment_insert BEFORE INSERT ON rent_payments FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Expenses
-DROP TRIGGER IF EXISTS on_expense_insert ON expenses;
-CREATE TRIGGER on_expense_insert BEFORE INSERT ON expenses FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Recurring Payments
-DROP TRIGGER IF EXISTS on_recurring_payment_insert ON recurring_payments;
-CREATE TRIGGER on_recurring_payment_insert BEFORE INSERT ON recurring_payments FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- SLAs
-DROP TRIGGER IF EXISTS on_sla_insert ON slas;
-CREATE TRIGGER on_sla_insert BEFORE INSERT ON slas FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Automation Workflows
-DROP TRIGGER IF EXISTS on_workflow_insert ON automation_workflows;
-CREATE TRIGGER on_workflow_insert BEFORE INSERT ON automation_workflows FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Dori Interactions
-DROP TRIGGER IF EXISTS on_dori_interaction_insert ON dori_interactions;
-CREATE TRIGGER on_dori_interaction_insert BEFORE INSERT ON dori_interactions FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Dori Actions
-DROP TRIGGER IF EXISTS on_dori_action_insert ON dori_actions;
-CREATE TRIGGER on_dori_action_insert BEFORE INSERT ON dori_actions FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Emergencies
-DROP TRIGGER IF EXISTS on_emergency_insert ON emergencies;
-CREATE TRIGGER on_emergency_insert BEFORE INSERT ON emergencies FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Tasks
-DROP TRIGGER IF EXISTS on_task_insert ON tasks;
-CREATE TRIGGER on_task_insert BEFORE INSERT ON tasks FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Vacancies
-DROP TRIGGER IF EXISTS on_vacancy_insert ON vacancies;
-CREATE TRIGGER on_vacancy_insert BEFORE INSERT ON vacancies FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Applicants
-DROP TRIGGER IF EXISTS on_applicant_insert ON applicants;
-CREATE TRIGGER on_applicant_insert BEFORE INSERT ON applicants FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Inspections
-DROP TRIGGER IF EXISTS on_inspection_insert ON inspections;
-CREATE TRIGGER on_inspection_insert BEFORE INSERT ON inspections FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Inspection Checklist Items
-DROP TRIGGER IF EXISTS on_checklist_item_insert ON inspection_checklist_items;
-CREATE TRIGGER on_checklist_item_insert BEFORE INSERT ON inspection_checklist_items FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Approval Requests
-DROP TRIGGER IF EXISTS on_approval_request_insert ON approval_requests;
-CREATE TRIGGER on_approval_request_insert BEFORE INSERT ON approval_requests FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Folders
-DROP TRIGGER IF EXISTS on_folder_insert ON folders;
-CREATE TRIGGER on_folder_insert BEFORE INSERT ON folders FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Meter Readings
-DROP TRIGGER IF EXISTS on_meter_reading_insert ON meter_readings;
-CREATE TRIGGER on_meter_reading_insert BEFORE INSERT ON meter_readings FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Inventory Checks
-DROP TRIGGER IF EXISTS on_inventory_check_insert ON inventory_checks;
-CREATE TRIGGER on_inventory_check_insert BEFORE INSERT ON inventory_checks FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Document Templates
-DROP TRIGGER IF EXISTS on_doc_template_insert ON document_templates;
-CREATE TRIGGER on_doc_template_insert BEFORE INSERT ON document_templates FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Payment Links
-DROP TRIGGER IF EXISTS on_payment_link_insert ON payment_links;
-CREATE TRIGGER on_payment_link_insert BEFORE INSERT ON payment_links FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Chat Sessions
-DROP TRIGGER IF EXISTS on_chat_session_insert ON chat_sessions;
-CREATE TRIGGER on_chat_session_insert BEFORE INSERT ON chat_sessions FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
-
--- Notifications
-DROP TRIGGER IF EXISTS on_notification_insert ON notifications;
-CREATE TRIGGER on_notification_insert BEFORE INSERT ON notifications FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row();
+-- Apply Trigger to all tables with user_id
+DO $$ 
+DECLARE 
+    tbl text; 
+BEGIN
+    FOR tbl IN 
+        SELECT table_name FROM information_schema.columns 
+        WHERE column_name = 'user_id' AND table_schema = 'public'
+    LOOP
+        EXECUTE format('DROP TRIGGER IF EXISTS on_%I_insert ON %I', tbl, tbl);
+        EXECUTE format('CREATE TRIGGER on_%I_insert BEFORE INSERT ON %I FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_row()', tbl, tbl);
+    END LOOP;
+END $$;
