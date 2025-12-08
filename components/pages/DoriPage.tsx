@@ -8,9 +8,9 @@ import Modal from '../common/Modal';
 import Input from '../common/Input';
 import Select from '../common/Select';
 import Textarea from '../common/Textarea';
-import { 
-    DoriIcon, MicrophoneIcon, PlayCircleIcon, StopCircleIcon, SpeakerWaveIcon, 
-    BoltIcon, CheckCircleIcon, XMarkIcon, ChatBubbleLeftEllipsisIcon, PhoneIcon, 
+import {
+    DoriIcon, MicrophoneIcon, PlayCircleIcon, StopCircleIcon, SpeakerWaveIcon,
+    BoltIcon, CheckCircleIcon, XMarkIcon, ChatBubbleLeftEllipsisIcon, PhoneIcon,
     EnvelopeIcon, ClockIcon, ArrowTrendingUpIcon, PlusCircleIcon, FireIcon,
     ArrowPathIcon, ListBulletIcon, MagnifyingGlassIcon, FunnelIcon, ChevronDownIcon, ChevronUpIcon,
     ClipboardDocumentCheckIcon
@@ -25,6 +25,7 @@ interface DoriPageProps {
     updateAction: (action: DoriAction) => void;
     updateEmergency: (item: EmergencyItem) => void;
     addExecution: (execution: DoriExecution) => void;
+    integrationSettings?: any[];
 }
 
 interface EmergencyCardProps {
@@ -36,12 +37,12 @@ const EmergencyCard: React.FC<EmergencyCardProps> = ({ item, onResolve }) => (
     <div className="bg-red-50 p-4 rounded-lg border border-red-200 flex justify-between items-start shadow-sm mb-3">
         <div className="flex items-start gap-3">
             <div className="p-2 bg-red-100 rounded-full text-red-600 mt-1">
-                <FireIcon className="w-6 h-6"/>
+                <FireIcon className="w-6 h-6" />
             </div>
             <div>
                 <h4 className="font-bold text-red-900">{item.title}</h4>
                 <p className="text-sm text-red-800 mt-1">{item.description}</p>
-                <p className="text-xs text-red-500 mt-2 flex items-center"><ClockIcon className="w-3 h-3 mr-1"/> {new Date(item.timestamp).toLocaleString()}</p>
+                <p className="text-xs text-red-500 mt-2 flex items-center"><ClockIcon className="w-3 h-3 mr-1" /> {new Date(item.timestamp).toLocaleString()}</p>
             </div>
         </div>
         <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white border-none" onClick={() => onResolve(item)}>
@@ -50,16 +51,16 @@ const EmergencyCard: React.FC<EmergencyCardProps> = ({ item, onResolve }) => (
     </div>
 )
 
-const ResolveEmergencyModal = ({ 
-    isOpen, 
-    onClose, 
-    item, 
-    onConfirm, 
-    updateEmergency 
-}: { 
-    isOpen: boolean, 
-    onClose: () => void, 
-    item: EmergencyItem | null, 
+const ResolveEmergencyModal = ({
+    isOpen,
+    onClose,
+    item,
+    onConfirm,
+    updateEmergency
+}: {
+    isOpen: boolean,
+    onClose: () => void,
+    item: EmergencyItem | null,
     onConfirm: (notes: string, stepsTaken: string[]) => void,
     updateEmergency: (item: EmergencyItem) => void
 }) => {
@@ -108,7 +109,7 @@ const ResolveEmergencyModal = ({
         <Modal isOpen={isOpen} onClose={onClose} title="Emergency Resolution Protocol">
             <div className="space-y-6">
                 <div className="bg-red-50 border border-red-100 p-4 rounded-lg flex items-start">
-                    <FireIcon className="w-6 h-6 text-red-500 mr-3 mt-1 flex-shrink-0"/>
+                    <FireIcon className="w-6 h-6 text-red-500 mr-3 mt-1 flex-shrink-0" />
                     <div>
                         <h4 className="font-bold text-red-900 mb-1">{item.title}</h4>
                         <p className="text-sm text-red-800">{item.description}</p>
@@ -118,9 +119,9 @@ const ResolveEmergencyModal = ({
 
                 <div>
                     <h4 className="font-semibold text-zinc-900 mb-3 flex items-center text-sm uppercase tracking-wider">
-                        <ClipboardDocumentCheckIcon className="w-5 h-5 mr-2 text-indigo-500"/> Recommended Next Steps (Dori AI)
+                        <ClipboardDocumentCheckIcon className="w-5 h-5 mr-2 text-indigo-500" /> Recommended Next Steps (Dori AI)
                     </h4>
-                    
+
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-6 text-zinc-500">
                             <Spinner className="w-6 h-6 text-indigo-500 mb-2" />
@@ -129,16 +130,14 @@ const ResolveEmergencyModal = ({
                     ) : (
                         <div className="space-y-2">
                             {item.checklist && item.checklist.length > 0 ? item.checklist.map((step, idx) => (
-                                <div 
-                                    key={idx} 
-                                    className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all ${
-                                        step.checked ? 'bg-green-50 border-green-200' : 'bg-white border-zinc-200 hover:border-indigo-300'
-                                    }`} 
+                                <div
+                                    key={idx}
+                                    className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all ${step.checked ? 'bg-green-50 border-green-200' : 'bg-white border-zinc-200 hover:border-indigo-300'
+                                        }`}
                                     onClick={() => handleStepToggle(idx)}
                                 >
-                                    <div className={`w-5 h-5 rounded flex items-center justify-center mr-3 transition-colors flex-shrink-0 ${
-                                        step.checked ? 'bg-green-500 text-white' : 'bg-zinc-100 border border-zinc-300'
-                                    }`}>
+                                    <div className={`w-5 h-5 rounded flex items-center justify-center mr-3 transition-colors flex-shrink-0 ${step.checked ? 'bg-green-500 text-white' : 'bg-zinc-100 border border-zinc-300'
+                                        }`}>
                                         {step.checked && <CheckCircleIcon className="w-3.5 h-3.5" />}
                                     </div>
                                     <span className={`text-sm ${step.checked ? 'text-green-800 font-medium' : 'text-zinc-700'}`}>{step.label}</span>
@@ -150,9 +149,10 @@ const ResolveEmergencyModal = ({
                     )}
                 </div>
 
-                <Textarea 
-                    label="Resolution Notes" 
-                    placeholder="Describe how the issue was resolved, contractor details, and any follow-up required..." 
+                <Textarea
+                    label="Resolution Notes"
+                    name="resolution_notes"
+                    placeholder="Describe how the issue was resolved, contractor details, and any follow-up required..."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={4}
@@ -167,13 +167,13 @@ const ResolveEmergencyModal = ({
     )
 }
 
-const LiveConsole = ({ status, emergencies, onResolveEmergency }: { status: 'Online' | 'Offline', emergencies: EmergencyItem[], onResolveEmergency: (i: EmergencyItem) => void }) => {
+const LiveConsole = ({ status, emergencies, onResolveEmergency, doriNumber }: { status: 'Online' | 'Offline', emergencies: EmergencyItem[], onResolveEmergency: (i: EmergencyItem) => void, doriNumber?: string }) => {
     const [isListening, setIsListening] = useState(true);
 
     return (
         <div className="bg-zinc-900 rounded-xl p-6 text-white shadow-lg relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-10">
-                <DoriIcon className="w-48 h-48"/>
+                <DoriIcon className="w-48 h-48" />
             </div>
             <div className="relative z-10">
                 <div className="flex justify-between items-start mb-6">
@@ -185,10 +185,17 @@ const LiveConsole = ({ status, emergencies, onResolveEmergency }: { status: 'Onl
                                 <span className={`relative inline-flex rounded-full h-3 w-3 ${isListening ? 'bg-green-500' : 'bg-red-500'}`}></span>
                             </span>
                         </h2>
-                        <p className="text-zinc-400 text-sm mt-1">Status: {isListening ? 'Active & Listening' : 'Offline'}</p>
+                        <div className="flex flex-col mt-1">
+                            <p className="text-zinc-400 text-sm">Status: {isListening ? 'Active & Listening' : 'Offline'}</p>
+                            {doriNumber && (
+                                <p className="text-indigo-400 text-sm font-mono mt-1 flex items-center">
+                                    <PhoneIcon className="w-3 h-3 mr-1" /> {doriNumber} (ElevenLabs Agent Active)
+                                </p>
+                            )}
+                        </div>
                     </div>
-                    <Button 
-                        size="sm" 
+                    <Button
+                        size="sm"
                         className={`border-none ${isListening ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}
                         onClick={() => setIsListening(!isListening)}
                     >
@@ -199,19 +206,19 @@ const LiveConsole = ({ status, emergencies, onResolveEmergency }: { status: 'Onl
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 mb-8">
                     <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
                         <div className="flex items-center gap-3 mb-2 text-zinc-400 text-sm">
-                            <PhoneIcon className="w-4 h-4"/> Active Calls
+                            <PhoneIcon className="w-4 h-4" /> Active Calls
                         </div>
                         <p className="text-2xl font-mono">0</p>
                     </div>
                     <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
                         <div className="flex items-center gap-3 mb-2 text-zinc-400 text-sm">
-                            <ChatBubbleLeftEllipsisIcon className="w-4 h-4"/> Chats
+                            <ChatBubbleLeftEllipsisIcon className="w-4 h-4" /> Chats
                         </div>
                         <p className="text-2xl font-mono">0</p>
                     </div>
                     <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
                         <div className="flex items-center gap-3 mb-2 text-zinc-400 text-sm">
-                            <BoltIcon className="w-4 h-4"/> Executing Workflows
+                            <BoltIcon className="w-4 h-4" /> Executing Workflows
                         </div>
                         <p className="text-2xl font-mono text-blue-400">1</p>
                     </div>
@@ -221,7 +228,7 @@ const LiveConsole = ({ status, emergencies, onResolveEmergency }: { status: 'Onl
                 {emergencies.length > 0 && (
                     <div className="mt-6 border-t border-zinc-700 pt-6">
                         <h3 className="text-red-400 font-bold flex items-center mb-4 animate-pulse">
-                            <FireIcon className="w-5 h-5 mr-2"/> Active Critical Incidents ({emergencies.length})
+                            <FireIcon className="w-5 h-5 mr-2" /> Active Critical Incidents ({emergencies.length})
                         </h3>
                         <div className="space-y-3">
                             {emergencies.map(em => (
@@ -251,10 +258,10 @@ interface InteractionLogCardProps {
 
 const InteractionLogCard: React.FC<InteractionLogCardProps> = ({ log, onView }) => {
     const getIcon = () => {
-        switch(log.type) {
-            case 'Voice Call': return <PhoneIcon className="w-5 h-5 text-blue-500"/>;
-            case 'Chat': return <ChatBubbleLeftEllipsisIcon className="w-5 h-5 text-green-500"/>;
-            case 'Email': return <EnvelopeIcon className="w-5 h-5 text-amber-500"/>;
+        switch (log.type) {
+            case 'Voice Call': return <PhoneIcon className="w-5 h-5 text-blue-500" />;
+            case 'Chat': return <ChatBubbleLeftEllipsisIcon className="w-5 h-5 text-green-500" />;
+            case 'Email': return <EnvelopeIcon className="w-5 h-5 text-amber-500" />;
         }
     }
 
@@ -268,18 +275,17 @@ const InteractionLogCard: React.FC<InteractionLogCardProps> = ({ log, onView }) 
                         <p className="text-xs text-zinc-500">{log.contactRole} • {log.direction}</p>
                     </div>
                 </div>
-                <span className="text-xs text-zinc-400">{new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                <span className="text-xs text-zinc-400">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
             <p className="text-sm text-zinc-600 line-clamp-2 mb-3">{log.summary}</p>
             <div className="flex items-center gap-2">
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${
-                    log.sentiment === 'Positive' ? 'bg-green-50 text-green-700 border-green-100' :
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${log.sentiment === 'Positive' ? 'bg-green-50 text-green-700 border-green-100' :
                     log.sentiment === 'Urgent' ? 'bg-red-50 text-red-700 border-red-100' :
-                    'bg-zinc-50 text-zinc-600 border-zinc-200'
-                }`}>
+                        'bg-zinc-50 text-zinc-600 border-zinc-200'
+                    }`}>
                     {log.sentiment}
                 </span>
-                {log.duration && <span className="text-[10px] text-zinc-400 flex items-center"><ClockIcon className="w-3 h-3 mr-1"/> {log.duration}</span>}
+                {log.duration && <span className="text-[10px] text-zinc-400 flex items-center"><ClockIcon className="w-3 h-3 mr-1" /> {log.duration}</span>}
             </div>
         </div>
     )
@@ -302,8 +308,8 @@ const ActionCard: React.FC<ActionCardProps> = ({ action, onUpdate }) => (
                 <p className="text-xs text-zinc-400">Confidence: {action.confidenceScore}%</p>
             </div>
             <div className="flex gap-2">
-                <button onClick={() => onUpdate({...action, status: 'Rejected'})} className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors"><XMarkIcon className="w-5 h-5"/></button>
-                <button onClick={() => onUpdate({...action, status: 'Approved'})} className="p-1.5 text-green-500 hover:bg-green-50 rounded-md transition-colors"><CheckCircleIcon className="w-5 h-5"/></button>
+                <button onClick={() => onUpdate({ ...action, status: 'Rejected' })} className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors"><XMarkIcon className="w-5 h-5" /></button>
+                <button onClick={() => onUpdate({ ...action, status: 'Approved' })} className="p-1.5 text-green-500 hover:bg-green-50 rounded-md transition-colors"><CheckCircleIcon className="w-5 h-5" /></button>
             </div>
         </div>
     </div>
@@ -320,7 +326,7 @@ const TranscriptModal = ({ log, onClose }: { log: DoriInteraction, onClose: () =
                         <p className="text-xs text-zinc-500">{log.contactRole} • {log.type}</p>
                     </div>
                     {log.audioUrl && (
-                        <Button size="sm" variant="outline" leftIcon={<PlayCircleIcon className="w-4 h-4"/>}>Play Recording</Button>
+                        <Button size="sm" variant="outline" leftIcon={<PlayCircleIcon className="w-4 h-4" />}>Play Recording</Button>
                     )}
                 </div>
 
@@ -344,13 +350,13 @@ const TranscriptModal = ({ log, onClose }: { log: DoriInteraction, onClose: () =
                         <ul className="space-y-2">
                             {log.actionItems.map((item, i) => (
                                 <li key={i} className="flex items-center text-sm text-zinc-700">
-                                    <CheckCircleIcon className="w-4 h-4 text-green-500 mr-2"/> {item}
+                                    <CheckCircleIcon className="w-4 h-4 text-green-500 mr-2" /> {item}
                                 </li>
                             ))}
                         </ul>
                     </div>
                 )}
-                
+
                 <div className="flex justify-end">
                     <Button onClick={onClose}>Close</Button>
                 </div>
@@ -365,8 +371,8 @@ const ExecutionLogList = ({ executions }: { executions: DoriExecution[] }) => {
     const [statusFilter, setStatusFilter] = useState<'All' | 'Running' | 'Completed' | 'Cancelled'>('All');
 
     const filteredExecutions = executions.filter(ex => {
-        const matchesSearch = ex.workflowName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                              ex.entityName.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = ex.workflowName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            ex.entityName.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'All' || ex.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
@@ -376,7 +382,7 @@ const ExecutionLogList = ({ executions }: { executions: DoriExecution[] }) => {
     }
 
     const getStatusColor = (status: string) => {
-        switch(status) {
+        switch (status) {
             case 'Running': return 'bg-blue-100 text-blue-700';
             case 'Completed': return 'bg-green-100 text-green-700';
             case 'Failed': return 'bg-red-100 text-red-700';
@@ -391,19 +397,19 @@ const ExecutionLogList = ({ executions }: { executions: DoriExecution[] }) => {
             <div className="p-4 border-b border-zinc-100 flex flex-col gap-4">
                 <div className="flex justify-between items-center">
                     <h3 className="font-bold text-zinc-900 text-lg">Workflow Execution Log</h3>
-                    <Button variant="ghost" size="sm" leftIcon={<ArrowPathIcon className="w-4 h-4"/>}>Refresh</Button>
+                    <Button variant="ghost" size="sm" leftIcon={<ArrowPathIcon className="w-4 h-4" />}>Refresh</Button>
                 </div>
                 <div className="flex gap-2">
                     <div className="relative flex-1">
-                        <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"/>
-                        <input 
+                        <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                        <input
                             className="w-full pl-9 pr-3 py-2 text-sm border border-zinc-200 rounded-md focus:ring-2 focus:ring-zinc-900 outline-none"
                             placeholder="Search workflows or names..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <select 
+                    <select
                         className="px-3 py-2 border border-zinc-200 rounded-md text-sm focus:ring-2 focus:ring-zinc-900 outline-none bg-white"
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value as any)}
@@ -421,13 +427,13 @@ const ExecutionLogList = ({ executions }: { executions: DoriExecution[] }) => {
                     <div className="divide-y divide-zinc-100">
                         {filteredExecutions.map(ex => (
                             <div key={ex.id} className="bg-white">
-                                <div 
+                                <div
                                     className="p-4 flex items-center justify-between cursor-pointer hover:bg-zinc-50 transition-colors"
                                     onClick={() => toggleExpand(ex.id)}
                                 >
                                     <div className="flex items-center gap-4 flex-1 min-w-0">
                                         <div className={`p-2 rounded-full bg-zinc-100 flex-shrink-0`}>
-                                            <BoltIcon className="w-5 h-5 text-zinc-500"/>
+                                            <BoltIcon className="w-5 h-5 text-zinc-500" />
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <div className="flex items-center gap-2">
@@ -440,20 +446,19 @@ const ExecutionLogList = ({ executions }: { executions: DoriExecution[] }) => {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4 text-xs text-zinc-400 flex-shrink-0">
-                                        <span>{new Date(ex.startTime).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</span>
-                                        {expandedId === ex.id ? <ChevronUpIcon className="w-4 h-4"/> : <ChevronDownIcon className="w-4 h-4"/>}
+                                        <span>{new Date(ex.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                        {expandedId === ex.id ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
                                     </div>
                                 </div>
-                                
+
                                 {expandedId === ex.id && (
                                     <div className="bg-zinc-50 p-4 border-t border-zinc-100 pl-12">
                                         <ul className="relative border-l-2 border-zinc-200 space-y-4">
                                             {ex.steps.map((step, idx) => (
                                                 <li key={step.id} className="ml-4 relative">
-                                                    <div className={`absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full border-2 border-white ${
-                                                        step.status === 'Completed' ? 'bg-green-500' :
+                                                    <div className={`absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full border-2 border-white ${step.status === 'Completed' ? 'bg-green-500' :
                                                         step.status === 'Pending' ? 'bg-blue-500 animate-pulse' : 'bg-zinc-300'
-                                                    }`}></div>
+                                                        }`}></div>
                                                     <div className="flex justify-between items-start text-sm">
                                                         <span className="text-zinc-700">{step.description}</span>
                                                         <span className="text-xs text-zinc-400 font-mono">{new Date(step.timestamp).toLocaleTimeString()}</span>
@@ -476,11 +481,11 @@ const ExecutionLogList = ({ executions }: { executions: DoriExecution[] }) => {
     )
 }
 
-const DoriPage: React.FC<DoriPageProps> = ({ 
-    interactions, actions, emergencies, updateAction, updateEmergency, executions, addExecution
+const DoriPage: React.FC<DoriPageProps> = ({
+    interactions, actions, emergencies, updateAction, updateEmergency, executions, addExecution, integrationSettings = []
 }) => {
     const [selectedLog, setSelectedLog] = useState<DoriInteraction | null>(null);
-    
+
     // Use ID to track the active modal item instead of an object reference to prevent stale state issues
     const [resolveModalId, setResolveModalId] = useState<string | null>(null);
     const activeResolveItem = emergencies.find(e => e.id === resolveModalId) || null;
@@ -488,9 +493,12 @@ const DoriPage: React.FC<DoriPageProps> = ({
     const pendingActions = actions.filter(a => a.status === 'Pending');
     const openEmergencies = emergencies.filter(e => e.status === 'Open');
 
+    const twilioSettings = integrationSettings?.find(s => s.provider === 'twilio');
+    const doriNumber = twilioSettings?.phoneNumber;
+
     const handleActionUpdate = (updatedAction: DoriAction) => {
         updateAction(updatedAction);
-        
+
         if (updatedAction.status === 'Approved' || updatedAction.status === 'Rejected') {
             const isRejected = updatedAction.status === 'Rejected';
             const newExecution: DoriExecution = {
@@ -504,7 +512,7 @@ const DoriPage: React.FC<DoriPageProps> = ({
                     {
                         id: `step_${Date.now()}`,
                         timestamp: new Date().toISOString(),
-                        description: isRejected 
+                        description: isRejected
                             ? `User cancelled action: ${updatedAction.title}`
                             : `User approved: ${updatedAction.title}`,
                         status: (isRejected ? 'Skipped' : 'Completed') as DoriExecutionStep['status']
@@ -523,7 +531,7 @@ const DoriPage: React.FC<DoriPageProps> = ({
         if (!activeResolveItem) return;
 
         // Resolve in state
-        updateEmergency({...activeResolveItem, status: 'Resolved'});
+        updateEmergency({ ...activeResolveItem, status: 'Resolved' });
 
         // Log the resolution event with detailed steps
         const newExecution: DoriExecution = {
@@ -557,7 +565,7 @@ const DoriPage: React.FC<DoriPageProps> = ({
             <PageHeader title="Dori Command Center" subtitle="Your automated concierge and operation handler." />
 
             <div className="space-y-6">
-                <LiveConsole status="Online" emergencies={openEmergencies} onResolveEmergency={handleOpenResolveModal} />
+                <LiveConsole status="Online" emergencies={openEmergencies} onResolveEmergency={handleOpenResolveModal} doriNumber={doriNumber} />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Left: Logs */}
@@ -565,7 +573,7 @@ const DoriPage: React.FC<DoriPageProps> = ({
                         <div className="bg-white p-6 rounded-xl border border-zinc-200 shadow-sm">
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="font-bold text-zinc-900 text-lg">Interaction Feed</h3>
-                                <Button variant="ghost" size="sm" leftIcon={<ArrowPathIcon className="w-4 h-4"/>}>Refresh</Button>
+                                <Button variant="ghost" size="sm" leftIcon={<ArrowPathIcon className="w-4 h-4" />}>Refresh</Button>
                             </div>
                             <div className="space-y-4">
                                 {interactions.slice(0, 5).map(log => (
@@ -583,7 +591,7 @@ const DoriPage: React.FC<DoriPageProps> = ({
                         <div className="bg-zinc-50 rounded-xl border border-zinc-200 p-4">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="font-bold text-zinc-900 flex items-center">
-                                    <BoltIcon className="w-5 h-5 mr-2 text-yellow-500"/> Permissions Queue
+                                    <BoltIcon className="w-5 h-5 mr-2 text-yellow-500" /> Permissions Queue
                                 </h3>
                                 <span className="bg-zinc-200 text-zinc-600 text-xs font-bold px-2 py-0.5 rounded-full">{pendingActions.length}</span>
                             </div>
@@ -604,9 +612,9 @@ const DoriPage: React.FC<DoriPageProps> = ({
 
             {/* Modals */}
             <TranscriptModal log={selectedLog!} onClose={() => setSelectedLog(null)} />
-            <ResolveEmergencyModal 
-                isOpen={!!activeResolveItem} 
-                onClose={() => setResolveModalId(null)} 
+            <ResolveEmergencyModal
+                isOpen={!!activeResolveItem}
+                onClose={() => setResolveModalId(null)}
                 item={activeResolveItem}
                 onConfirm={handleConfirmResolution}
                 updateEmergency={updateEmergency}

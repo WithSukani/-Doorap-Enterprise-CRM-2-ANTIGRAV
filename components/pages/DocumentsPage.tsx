@@ -5,11 +5,13 @@ import PageHeader from '../PageHeader';
 import Button from '../common/Button';
 import DocumentForm from '../forms/DocumentForm';
 import DocumentGenerationModal from '../modals/DocumentGenerationModal';
+import TemplateManagerModal from '../modals/TemplateManagerModal';
 import Modal from '../common/Modal';
 import Input from '../common/Input';
-import { 
-    FolderIcon, FolderOpenIcon, DocumentTextIcon, PlusCircleIcon, 
-    ArrowDownLeftIcon, SparklesIcon, TrashIcon, PencilIcon, MagnifyingGlassIcon 
+import DocumentViewerModal from '../modals/DocumentViewerModal';
+import {
+    FolderIcon, FolderOpenIcon, DocumentTextIcon, PlusCircleIcon,
+    ArrowDownLeftIcon, SparklesIcon, TrashIcon, PencilIcon, MagnifyingGlassIcon
 } from '../icons/HeroIcons';
 
 // Define CreateFolderModal locally since previous export might be tricky to import if not standard
@@ -36,6 +38,7 @@ interface DocumentsPageProps {
     deleteFolder: (id: string) => void;
     documentTemplates: DocumentTemplate[];
     addDocumentTemplate: (template: DocumentTemplate) => void;
+    deleteDocumentTemplate?: (id: string) => void;
     properties: Property[];
     tenants: Tenant[];
     userProfile: UserProfile;
@@ -44,9 +47,6 @@ interface DocumentsPageProps {
 
 const SYSTEM_FOLDERS: Folder[] = [
     { id: 'all', name: 'All Documents', type: 'system' },
-    { id: 'lease', name: 'Leases & Agreements', type: 'system' },
-    { id: 'compliance', name: 'Compliance & Safety', type: 'system' },
-    { id: 'finance', name: 'Invoices & Receipts', type: 'system' },
 ];
 
 const DocumentsPage: React.FC<DocumentsPageProps> = (props) => {
@@ -55,22 +55,37 @@ const DocumentsPage: React.FC<DocumentsPageProps> = (props) => {
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
     const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
+    const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false);
+    const [viewingDocument, setViewingDocument] = useState<Document | null>(null);
+    const [preSelectedTemplate, setPreSelectedTemplate] = useState<DocumentTemplate | null>(null);
 
-    const allFolders = [...SYSTEM_FOLDERS, ...props.folders];
+    // Defensive check: Ensure props are arrays
+    const safeFolders = props.folders || [];
+    const safeDocuments = props.documents || [];
+    const safeTemplates = props.documentTemplates || [];
 
-    const filteredDocuments = useMemo(() => {
-        return props.documents.filter(doc => {
+    const allFolders = [...SYSTEM_FOLDERS, ...safeFolders];
+
+    const filteredItems = useMemo(() => {
+        const docs = safeDocuments.filter(doc => {
             const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase());
             let matchesFolder = true;
             if (activeFolderId === 'all') matchesFolder = true;
-            else if (activeFolderId === 'lease') matchesFolder = doc.type.toLowerCase().includes('lease') || doc.type.toLowerCase().includes('agreement');
-            else if (activeFolderId === 'compliance') matchesFolder = doc.type.toLowerCase().includes('certificate') || doc.type.toLowerCase().includes('safety');
-            else if (activeFolderId === 'finance') matchesFolder = doc.type.toLowerCase().includes('invoice') || doc.type.toLowerCase().includes('receipt') || doc.type.toLowerCase().includes('financial');
-            else matchesFolder = doc.folderId === activeFolderId; 
-            
+            else matchesFolder = doc.folderId === activeFolderId;
+
             return matchesSearch && matchesFolder;
         });
-    }, [props.documents, searchTerm, activeFolderId]);
+
+        const templates = safeTemplates.filter(temp => {
+            const matchesSearch = temp.name.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesFolder = activeFolderId === 'all' ? true : temp.folderId === activeFolderId; // Templates only show in specific folder or All
+            // Note: System categories (lease, compliance) usually don't apply to templates unless we map 'type', but for now strict folder match or 'all'.
+
+            return matchesSearch && matchesFolder;
+        }).map(t => ({ ...t, isTemplate: true }));
+
+        return { docs, templates };
+    }, [safeDocuments, safeTemplates, searchTerm, activeFolderId]);
 
     const handleUpload = (doc: Document) => {
         // If inside a custom folder, assign it
@@ -90,20 +105,28 @@ const DocumentsPage: React.FC<DocumentsPageProps> = (props) => {
                 </div>
                 <div className="flex-1 overflow-y-auto p-2 space-y-1">
                     {allFolders.map(folder => (
-                        <button
-                            key={folder.id}
-                            onClick={() => setActiveFolderId(folder.id)}
-                            className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                                activeFolderId === folder.id ? 'bg-zinc-100 text-zinc-900' : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700'
-                            }`}
-                        >
-                            {activeFolderId === folder.id ? <FolderOpenIcon className="w-5 h-5 mr-2 text-zinc-800"/> : <FolderIcon className="w-5 h-5 mr-2 text-zinc-400"/>}
-                            {folder.name}
-                        </button>
+                        <div key={folder.id} className="group relative">
+                            <button
+                                onClick={() => setActiveFolderId(folder.id)}
+                                className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeFolderId === folder.id ? 'bg-zinc-100 text-zinc-900' : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700'
+                                    }`}
+                            >
+                                {activeFolderId === folder.id ? <FolderOpenIcon className="w-5 h-5 mr-2 text-zinc-800" /> : <FolderIcon className="w-5 h-5 mr-2 text-zinc-400" />}
+                                {folder.name}
+                            </button>
+                            {folder.type === 'custom' && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); if (window.confirm('Delete this folder?')) props.deleteFolder(folder.id); }}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-red-500 transition-opacity"
+                                >
+                                    <TrashIcon className="w-3 h-3" />
+                                </button>
+                            )}
+                        </div>
                     ))}
                 </div>
                 <div className="p-4 border-t border-zinc-100">
-                    <Button variant="outline" size="sm" className="w-full" onClick={() => setIsCreateFolderModalOpen(true)} leftIcon={<PlusCircleIcon className="w-4 h-4"/>}>New Folder</Button>
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => setIsCreateFolderModalOpen(true)} leftIcon={<PlusCircleIcon className="w-4 h-4" />}>New Folder</Button>
                 </div>
             </div>
 
@@ -112,32 +135,46 @@ const DocumentsPage: React.FC<DocumentsPageProps> = (props) => {
                 {/* Toolbar */}
                 <div className="bg-white border-b border-zinc-200 p-4 flex justify-between items-center shadow-sm">
                     <div className="flex items-center bg-zinc-100 px-3 py-2 rounded-md w-64">
-                        <MagnifyingGlassIcon className="w-4 h-4 text-zinc-400 mr-2"/>
-                        <input 
-                            className="bg-transparent border-none focus:ring-0 text-sm p-0 w-full placeholder-zinc-400" 
-                            placeholder="Search files..." 
+                        <MagnifyingGlassIcon className="w-4 h-4 text-zinc-400 mr-2" />
+                        <input
+                            className="bg-transparent border-none focus:ring-0 text-sm p-0 w-full placeholder-zinc-400"
+                            placeholder="Search files..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                         />
                     </div>
                     <div className="flex gap-3">
-                        <Button onClick={() => setIsGenerateModalOpen(true)} leftIcon={<SparklesIcon className="w-5 h-5"/>}>Draft with Dori</Button>
-                        <Button variant="outline" onClick={() => setIsUploadModalOpen(true)} leftIcon={<ArrowDownLeftIcon className="w-5 h-5"/>}>Upload</Button>
+                        <Button onClick={() => setIsTemplateManagerOpen(true)} leftIcon={<SparklesIcon className="w-5 h-5" />}>Create with Dori</Button>
+                        <Button variant="outline" onClick={() => setIsUploadModalOpen(true)} leftIcon={<ArrowDownLeftIcon className="w-5 h-5" />}>Upload</Button>
                     </div>
                 </div>
 
                 {/* File Grid */}
                 <div className="flex-1 overflow-y-auto p-6">
-                    {filteredDocuments.length > 0 ? (
+                    {filteredItems.docs.length > 0 || filteredItems.templates.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            {filteredDocuments.map(doc => (
-                                <div key={doc.id} className="group bg-white p-4 rounded-lg border border-zinc-200 shadow-sm hover:shadow-md hover:border-zinc-300 transition-all cursor-pointer relative">
+                            {filteredItems.templates.map(temp => (
+                                <div key={temp.id} onClick={() => { setPreSelectedTemplate(temp); setIsGenerateModalOpen(true); }} className="group bg-white p-4 rounded-lg border border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer relative ring-1 ring-indigo-50">
+                                    <div className="flex items-start justify-between mb-2">
+                                        <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
+                                            <SparklesIcon className="w-6 h-6" />
+                                        </div>
+                                        <button onClick={(e) => { e.stopPropagation(); if (window.confirm('Delete template?')) props.deleteDocumentTemplate && props.deleteDocumentTemplate(temp.id) }} className="text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <TrashIcon className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                    <h4 className="font-medium text-zinc-900 text-sm truncate mb-1" title={temp.name}>{temp.name}</h4>
+                                    <p className="text-xs text-indigo-500 font-medium">Template</p>
+                                </div>
+                            ))}
+                            {filteredItems.docs.map(doc => (
+                                <div key={doc.id} onClick={() => setViewingDocument(doc)} className="group bg-white p-4 rounded-lg border border-zinc-200 shadow-sm hover:shadow-md hover:border-zinc-300 transition-all cursor-pointer relative">
                                     <div className="flex items-start justify-between mb-2">
                                         <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-                                            <DocumentTextIcon className="w-6 h-6"/>
+                                            <DocumentTextIcon className="w-6 h-6" />
                                         </div>
-                                        <button onClick={(e) => {e.stopPropagation(); if(window.confirm('Delete?')) props.deleteDocument(doc.id)}} className="text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <TrashIcon className="w-4 h-4"/>
+                                        <button onClick={(e) => { e.stopPropagation(); if (window.confirm('Delete?')) props.deleteDocument(doc.id) }} className="text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <TrashIcon className="w-4 h-4" />
                                         </button>
                                     </div>
                                     <h4 className="font-medium text-zinc-900 text-sm truncate mb-1" title={doc.name}>{doc.name}</h4>
@@ -148,7 +185,7 @@ const DocumentsPage: React.FC<DocumentsPageProps> = (props) => {
                         </div>
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-zinc-400">
-                            <FolderIcon className="w-16 h-16 mb-4 opacity-20"/>
+                            <FolderIcon className="w-16 h-16 mb-4 opacity-20" />
                             <p>No documents found in this folder.</p>
                         </div>
                     )}
@@ -156,31 +193,51 @@ const DocumentsPage: React.FC<DocumentsPageProps> = (props) => {
             </div>
 
             {/* Modals */}
-            <LocalCreateFolderModal 
-                isOpen={isCreateFolderModalOpen} 
-                onClose={() => setIsCreateFolderModalOpen(false)} 
-                onSubmit={props.addFolder} 
+            <LocalCreateFolderModal
+                isOpen={isCreateFolderModalOpen}
+                onClose={() => setIsCreateFolderModalOpen(false)}
+                onSubmit={props.addFolder}
             />
-            <DocumentForm 
-                isOpen={isUploadModalOpen} 
-                onClose={() => setIsUploadModalOpen(false)} 
+            <DocumentForm
+                isOpen={isUploadModalOpen}
+                onClose={() => setIsUploadModalOpen(false)}
                 onSubmit={handleUpload}
                 parentId="general" // Default to general if uploaded directly
                 parentType="property" // Fallback
+            />
+            <TemplateManagerModal
+                isOpen={isTemplateManagerOpen}
+                onClose={() => setIsTemplateManagerOpen(false)}
+                templates={safeTemplates}
+                onAdd={props.addDocumentTemplate}
+                onDelete={props.deleteDocumentTemplate || (() => { })}
+                folders={allFolders} // Pass all folders (system + custom)
+                onUse={(template) => {
+                    setPreSelectedTemplate(template);
+                    setIsTemplateManagerOpen(false);
+                    setIsGenerateModalOpen(true);
+                }}
             />
             <DocumentGenerationModal
                 isOpen={isGenerateModalOpen}
                 onClose={() => setIsGenerateModalOpen(false)}
                 onSubmit={handleUpload} // Reuse upload handler to add generated doc
-                documentTemplates={props.documentTemplates}
+                documentTemplates={safeTemplates}
                 properties={props.properties}
                 tenants={props.tenants}
                 userProfile={props.userProfile}
                 parentObject={props.properties[0]} // Default context
+                folders={[...safeFolders]}
+                preSelectedTemplateId={preSelectedTemplate?.id}
             />
+            <DocumentViewerModal
+                isOpen={!!viewingDocument}
+                onClose={() => setViewingDocument(null)}
+                document={viewingDocument}
+            />
+
         </div>
     );
 };
 
 export default DocumentsPage;
-    

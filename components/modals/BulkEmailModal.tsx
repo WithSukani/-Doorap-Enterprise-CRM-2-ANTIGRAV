@@ -22,7 +22,7 @@ const BulkEmailModal: React.FC<BulkEmailModalProps> = ({ isOpen, onClose, recipi
 
     const handleSend = () => {
         if (!subject || !message) return;
-        
+
         setIsSending(true);
         // Simulate API latency
         setTimeout(() => {
@@ -53,36 +53,36 @@ const BulkEmailModal: React.FC<BulkEmailModalProps> = ({ isOpen, onClose, recipi
                 <div className="space-y-4">
                     <div className="bg-zinc-50 p-3 rounded-md border border-zinc-200 flex items-center justify-between">
                         <div className="flex items-center text-sm text-zinc-700">
-                            <UserGroupIcon className="w-5 h-5 mr-2 text-zinc-400"/>
+                            <UserGroupIcon className="w-5 h-5 mr-2 text-zinc-400" />
                             <span>Recipients: <strong>{recipients.length} {context}</strong></span>
                         </div>
                         <span className="text-xs text-zinc-400">via SendGrid</span>
                     </div>
 
-                    <Input 
-                        label="Subject Line" 
-                        name="subject" 
-                        value={subject} 
-                        onChange={(e) => setSubject(e.target.value)} 
+                    <Input
+                        label="Subject Line"
+                        name="subject"
+                        value={subject}
+                        onChange={(e) => setSubject(e.target.value)}
                         placeholder={`Important update for all ${context.toLowerCase()}...`}
                     />
 
-                    <Textarea 
-                        label="Message Body" 
-                        name="message" 
-                        value={message} 
-                        onChange={(e) => setMessage(e.target.value)} 
+                    <Textarea
+                        label="Message Body"
+                        name="message"
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
                         rows={8}
                         placeholder="Dear {{Name}}, write your message here..."
                     />
-                    
+
                     <p className="text-xs text-zinc-500">
                         Tip: Use <strong>{'{{Name}}'}</strong> to personalize emails for each recipient.
                     </p>
 
                     <div className="flex justify-end pt-4 border-t border-zinc-100">
                         <Button variant="outline" onClick={onClose} className="mr-2">Cancel</Button>
-                        <Button onClick={handleSend} isLoading={isSending} leftIcon={<PaperAirplaneIcon className="w-4 h-4"/>}>
+                        <Button onClick={handleSend} isLoading={isSending} leftIcon={<PaperAirplaneIcon className="w-4 h-4" />}>
                             Send Broadcast
                         </Button>
                     </div>

@@ -1,17 +1,17 @@
 
 import React, { useState, useMemo } from 'react';
-import { Landlord, Property, Tenant, ApprovalRequest, Document, CommunicationLog, DocumentTemplate, UserProfile, MaintenanceRequest, RentPayment, Expense, MaintenanceStatus, EmailIntegrationSettings } from '../../types';
+import { Landlord, Property, Tenant, ApprovalRequest, Document, CommunicationLog, DocumentTemplate, UserProfile, MaintenanceRequest, RentPayment, Expense, MaintenanceStatus, EmailIntegrationSettings, Folder } from '../../types';
 import PageHeader from '../PageHeader';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
 import Input from '../common/Input';
 import Select from '../common/Select';
 import Textarea from '../common/Textarea';
-import { 
-    UserGroupIcon, PlusCircleIcon, FolderIcon, FolderOpenIcon, 
+import {
+    UserGroupIcon, PlusCircleIcon, FolderIcon, FolderOpenIcon,
     FaceSmileIcon, FaceMehIcon, FaceFrownIcon,
     BuildingOffice2Icon, BanknotesIcon, EyeIcon, ClockIcon, BriefcaseIcon,
-    PhoneIcon, EnvelopeIcon, MapPinIcon, ArrowTrendingUpIcon, 
+    PhoneIcon, EnvelopeIcon, MapPinIcon, ArrowTrendingUpIcon,
     DocumentTextIcon, ArrowDownLeftIcon, SparklesIcon, CurrencyDollarIconSolid,
     CloudArrowUpIcon, ClipboardDocumentCheckIcon, ReceiptPercentIcon, AtSymbolIcon,
     ArchiveBoxArrowDownIcon, ArrowUturnLeftIcon
@@ -21,6 +21,7 @@ import CommunicationLogSection from '../features/CommunicationLogSection';
 import PropertyDetailsModal from '../modals/PropertyDetailsModal';
 import TenantDetailsModal from '../modals/TenantDetailsModal';
 import BulkEmailModal from '../modals/BulkEmailModal';
+import AddClientModal from '../modals/AddClientModal';
 
 // --- Sub-Components ---
 
@@ -44,7 +45,7 @@ interface LandlordCardProps {
 const LandlordCard: React.FC<LandlordCardProps> = ({ landlord, properties, pendingApprovalsCount, onClick, onArchive, onRestore }) => {
     const landlordProperties = properties.filter(p => p.ownerName === landlord.name);
     const totalValue = landlordProperties.reduce((sum, p) => sum + (p.value || 0), 0);
-    
+
     const financialHealthColor = pendingApprovalsCount > 0 ? 'border-orange-400 ring-1 ring-orange-100' : 'border-zinc-200';
 
     return (
@@ -71,37 +72,37 @@ const LandlordCard: React.FC<LandlordCardProps> = ({ landlord, properties, pendi
                     </span>
                 )}
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4 mb-4 border-t border-zinc-50 pt-4">
                 <div>
                     <p className="text-xs text-zinc-500 uppercase tracking-wider font-medium">Portfolio</p>
                     <p className="text-sm font-semibold text-zinc-900 flex items-center mt-1">
-                        <BuildingOffice2Icon className="w-4 h-4 mr-1 text-zinc-400"/> {landlordProperties.length} Units
+                        <BuildingOffice2Icon className="w-4 h-4 mr-1 text-zinc-400" /> {landlordProperties.length} Units
                     </p>
                 </div>
                 <div>
                     <p className="text-xs text-zinc-500 uppercase tracking-wider font-medium">Est. Value</p>
                     <p className="text-sm font-semibold text-zinc-900 flex items-center mt-1">
-                        <BanknotesIcon className="w-4 h-4 mr-1 text-zinc-400"/> £{(totalValue / 1000).toFixed(0)}k
+                        <BanknotesIcon className="w-4 h-4 mr-1 text-zinc-400" /> £{(totalValue / 1000).toFixed(0)}k
                     </p>
                 </div>
             </div>
-            
+
             <div className="mt-auto pt-2 flex justify-between items-center text-xs text-zinc-400">
                 <span>Last interaction: {new Date(landlord.lastInteractionDate).toLocaleDateString()}</span>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                     {landlord.isArchived ? (
-                        <button 
-                            onClick={(e) => { e.stopPropagation(); onRestore(landlord); }} 
-                            className="text-green-600 hover:text-green-800 p-1" 
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onRestore(landlord); }}
+                            className="text-green-600 hover:text-green-800 p-1"
                             title="Restore"
                         >
                             <ArrowUturnLeftIcon className="w-4 h-4" />
                         </button>
                     ) : (
-                        <button 
-                            onClick={(e) => { e.stopPropagation(); onArchive(landlord); }} 
-                            className="text-zinc-400 hover:text-zinc-600 p-1" 
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onArchive(landlord); }}
+                            className="text-zinc-400 hover:text-zinc-600 p-1"
                             title="Archive"
                         >
                             <ArchiveBoxArrowDownIcon className="w-4 h-4" />
@@ -113,14 +114,14 @@ const LandlordCard: React.FC<LandlordCardProps> = ({ landlord, properties, pendi
     );
 }
 
-const ApprovalWorkflowHub = ({ 
-    approvals, 
-    onApprove, 
+const ApprovalWorkflowHub = ({
+    approvals,
+    onApprove,
     onReject,
     onCreateRequest
-}: { 
-    approvals: ApprovalRequest[], 
-    onApprove: (id: string) => void, 
+}: {
+    approvals: ApprovalRequest[],
+    onApprove: (id: string) => void,
     onReject: (id: string) => void,
     onCreateRequest: () => void
 }) => {
@@ -128,7 +129,7 @@ const ApprovalWorkflowHub = ({
         <div className="bg-white rounded-lg border border-zinc-200 shadow-sm overflow-hidden">
             <div className="p-4 border-b border-zinc-100 bg-zinc-50 flex justify-between items-center">
                 <h3 className="font-semibold text-zinc-900">Approval Workflow</h3>
-                <Button size="sm" leftIcon={<PlusCircleIcon className="w-4 h-4"/>} onClick={onCreateRequest}>New Request</Button>
+                <Button size="sm" leftIcon={<PlusCircleIcon className="w-4 h-4" />} onClick={onCreateRequest}>New Request</Button>
             </div>
             {approvals.length > 0 ? (
                 <div className="divide-y divide-zinc-100">
@@ -136,27 +137,26 @@ const ApprovalWorkflowHub = ({
                         <div key={appr.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-zinc-50 transition-colors">
                             <div className="mb-3 sm:mb-0 flex-1 mr-4">
                                 <div className="flex items-center mb-1">
-                                    <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full mr-2 ${
-                                        appr.status === 'Approved' ? 'bg-green-100 text-green-700' :
+                                    <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full mr-2 ${appr.status === 'Approved' ? 'bg-green-100 text-green-700' :
                                         appr.status === 'Rejected' ? 'bg-red-100 text-red-700' :
-                                        'bg-yellow-100 text-yellow-700'
-                                    }`}>
+                                            'bg-yellow-100 text-yellow-700'
+                                        }`}>
                                         {appr.status}
                                     </span>
                                     <span className="text-sm font-medium text-zinc-900">{appr.title}</span>
                                 </div>
                                 <p className="text-xs text-zinc-500">{appr.description || `Request for £${appr.amount}`}</p>
                                 <div className="flex items-center mt-2 space-x-4 text-xs text-zinc-400">
-                                    <span className="flex items-center"><ClockIcon className="w-3 h-3 mr-1"/> Sent: {new Date(appr.sentDate).toLocaleDateString()}</span>
-                                    {appr.viewedDate && <span className="flex items-center text-blue-400"><EyeIcon className="w-3 h-3 mr-1"/> Viewed {new Date(appr.viewedDate).toLocaleDateString()}</span>}
+                                    <span className="flex items-center"><ClockIcon className="w-3 h-3 mr-1" /> Sent: {new Date(appr.sentDate).toLocaleDateString()}</span>
+                                    {appr.viewedDate && <span className="flex items-center text-blue-400"><EyeIcon className="w-3 h-3 mr-1" /> Viewed {new Date(appr.viewedDate).toLocaleDateString()}</span>}
                                 </div>
                                 {appr.documentUrl && (
                                     <a href={appr.documentUrl} className="text-xs text-indigo-600 hover:underline mt-1 inline-block flex items-center">
-                                        <DocumentTextIcon className="w-3 h-3 mr-1"/> Attached Document
+                                        <DocumentTextIcon className="w-3 h-3 mr-1" /> Attached Document
                                     </a>
                                 )}
                             </div>
-                            
+
                             {appr.status === 'Sent' || appr.status === 'Viewed' ? (
                                 <div className="flex space-x-2 self-start sm:self-center">
                                     <Button size="sm" variant="outline" onClick={() => onReject(appr.id)} className="text-red-600 hover:bg-red-50 border-red-200">Reject</Button>
@@ -167,7 +167,7 @@ const ApprovalWorkflowHub = ({
                             ) : (
                                 <div className="text-right text-xs text-zinc-500 self-start sm:self-center">
                                     {appr.status === 'Approved' ? 'Signed digitally' : 'Request declined'}
-                                    <br/>
+                                    <br />
                                     {appr.actionDate && new Date(appr.actionDate).toLocaleDateString()}
                                 </div>
                             )}
@@ -189,7 +189,7 @@ const CreateApprovalModal = ({ isOpen, onClose, onSubmit, properties, documents 
     const [file, setFile] = useState<File | null>(null);
     const [selectedDocId, setSelectedDocId] = useState('');
     const [uploadMode, setUploadMode] = useState<'upload' | 'select'>('upload');
-    
+
     // Dynamic Fields
     const [contractor, setContractor] = useState('');
     const [dueDate, setDueDate] = useState('');
@@ -206,13 +206,13 @@ const CreateApprovalModal = ({ isOpen, onClose, onSubmit, properties, documents 
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         let finalDescription = description;
         // Enhance description based on type
         if (requestType === 'Maintenance Quote') finalDescription = `Contractor: ${contractor}. ${description}`;
         if (requestType === 'Invoice') finalDescription = `Due Date: ${dueDate}. ${description}`;
         if (requestType === 'Lease Renewal') finalDescription = `Tenant: ${tenantName}. ${description}`;
-        
+
         let documentUrl = undefined;
         if (uploadMode === 'upload' && file) {
             documentUrl = `#mock-${file.name}`;
@@ -246,7 +246,7 @@ const CreateApprovalModal = ({ isOpen, onClose, onSubmit, properties, documents 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="New Approval Request" size="lg">
             <form onSubmit={handleSubmit} className="space-y-6">
-                
+
                 {/* Type Selector */}
                 <div>
                     <label className="block text-sm font-medium text-zinc-700 mb-2">Request Type</label>
@@ -256,11 +256,10 @@ const CreateApprovalModal = ({ isOpen, onClose, onSubmit, properties, documents 
                                 key={type.id}
                                 type="button"
                                 onClick={() => setRequestType(type.id)}
-                                className={`flex flex-col items-center justify-center p-3 rounded-lg border text-sm font-medium transition-all ${
-                                    requestType === type.id 
-                                        ? 'bg-zinc-900 text-white border-zinc-900 ring-2 ring-offset-1 ring-zinc-900' 
-                                        : 'bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50'
-                                }`}
+                                className={`flex flex-col items-center justify-center p-3 rounded-lg border text-sm font-medium transition-all ${requestType === type.id
+                                    ? 'bg-zinc-900 text-white border-zinc-900 ring-2 ring-offset-1 ring-zinc-900'
+                                    : 'bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50'
+                                    }`}
                             >
                                 <type.icon className={`w-5 h-5 mb-1 ${requestType === type.id ? 'text-white' : 'text-zinc-400'}`} />
                                 {type.label}
@@ -271,7 +270,7 @@ const CreateApprovalModal = ({ isOpen, onClose, onSubmit, properties, documents 
 
                 <div className="space-y-4">
                     <Input label="Request Title" name="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={requestType === 'Invoice' ? 'e.g., PlumbRight Invoice #4092' : 'e.g., Boiler Repair Quote'} />
-                    
+
                     {/* Dynamic Fields based on Type */}
                     {requestType === 'Maintenance Quote' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -302,7 +301,7 @@ const CreateApprovalModal = ({ isOpen, onClose, onSubmit, properties, documents 
                     )}
 
                     <Textarea label="Description / Notes to Landlord" name="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
-                    
+
                     {/* Attachment Logic */}
                     <div>
                         <label className="block text-sm font-medium text-zinc-700 mb-2">Attachment</label>
@@ -313,8 +312,8 @@ const CreateApprovalModal = ({ isOpen, onClose, onSubmit, properties, documents 
 
                         {uploadMode === 'upload' ? (
                             <div className="border-2 border-dashed border-zinc-200 rounded-lg p-6 flex flex-col items-center justify-center hover:bg-zinc-50 transition-colors relative">
-                                <input 
-                                    type="file" 
+                                <input
+                                    type="file"
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                     onChange={handleFileChange}
                                 />
@@ -329,10 +328,10 @@ const CreateApprovalModal = ({ isOpen, onClose, onSubmit, properties, documents 
                                 )}
                             </div>
                         ) : (
-                            <Select 
-                                name="existingDoc" 
-                                value={selectedDocId} 
-                                onChange={e => setSelectedDocId(e.target.value)} 
+                            <Select
+                                name="existingDoc"
+                                value={selectedDocId}
+                                onChange={e => setSelectedDocId(e.target.value)}
                                 options={documents.map((d: any) => ({ label: d.name, value: d.id }))}
                                 placeholder="Select a document..."
                             />
@@ -358,45 +357,46 @@ const DocumentVault = ({
                 <h4 className="font-semibold text-zinc-900 mb-4">Folders</h4>
                 <ul className="space-y-1">
                     <li className="flex items-center justify-between p-2 bg-zinc-100 rounded-md text-sm font-medium text-zinc-900 cursor-pointer">
-                        <div className="flex items-center"><FolderOpenIcon className="w-5 h-5 mr-2 text-zinc-500"/> All Documents</div>
+                        <div className="flex items-center"><FolderOpenIcon className="w-5 h-5 mr-2 text-zinc-500" /> All Documents</div>
                     </li>
                     {folders.map((f: any, i: number) => (
                         <li key={i} className="flex items-center justify-between p-2 hover:bg-zinc-50 rounded-md text-sm text-zinc-600 cursor-pointer transition-colors">
-                            <div className="flex items-center"><FolderIcon className="w-5 h-5 mr-2 text-zinc-400"/> {f.name}</div>
+                            <div className="flex items-center"><FolderIcon className="w-5 h-5 mr-2 text-zinc-400" /> {f.name}</div>
                             <span className="bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded text-xs">{f.count}</span>
                         </li>
                     ))}
                 </ul>
                 <div className="mt-6 pt-4 border-t border-zinc-100">
-                    <Button size="sm" variant="outline" className="w-full" leftIcon={<PlusCircleIcon className="w-4 h-4"/>} onClick={onCreateFolder}>New Folder</Button>
+                    <Button size="sm" variant="outline" className="w-full" leftIcon={<PlusCircleIcon className="w-4 h-4" />} onClick={onCreateFolder}>New Folder</Button>
                 </div>
             </div>
             <div className="col-span-2">
                 <DocumentSection
                     documents={documents}
                     parentId={landlordId}
-                    parentType="financial_transaction" 
+                    parentType="financial_transaction"
                     addDocument={addDocument}
                     deleteDocument={deleteDocument}
                     documentTemplates={templates}
                     properties={properties}
                     tenants={tenants}
                     userProfile={userProfile}
-                    parentObject={{ id: landlordId, name: 'Landlord' } as any} 
+                    folders={folders}
+                    parentObject={{ id: landlordId, name: 'Landlord' } as any}
                 />
             </div>
         </div>
     )
 }
 
-const TenantsList = ({ 
-    tenants, 
-    properties, 
-    onViewTenant 
-}: { 
-    tenants: Tenant[], 
-    properties: Property[], 
-    onViewTenant: (t: Tenant) => void 
+const TenantsList = ({
+    tenants,
+    properties,
+    onViewTenant
+}: {
+    tenants: Tenant[],
+    properties: Property[],
+    onViewTenant: (t: Tenant) => void
 }) => {
     return (
         <div className="bg-white rounded-lg border border-zinc-200 shadow-sm overflow-hidden">
@@ -430,7 +430,7 @@ const YieldReportModal = ({ isOpen, onClose, propertyFinancials, totalValue }: {
 
     const totalAnnualRent = propertyFinancials.reduce((sum, p) => sum + p.rent * 12, 0); // Assuming monthly rent passed
     const totalAnnualNet = propertyFinancials.reduce((sum, p) => sum + p.net * 12, 0);
-    
+
     const grossYield = totalValue > 0 ? (totalAnnualRent / totalValue) * 100 : 0;
     const netYield = totalValue > 0 ? (totalAnnualNet / totalValue) * 100 : 0;
 
@@ -449,11 +449,11 @@ const YieldReportModal = ({ isOpen, onClose, propertyFinancials, totalValue }: {
                             <p className="font-bold text-zinc-900">£{totalAnnualRent.toLocaleString()}</p>
                         </div>
                         <div className="col-span-2 border-t border-zinc-200 pt-2 mt-2 grid grid-cols-2 gap-4">
-                             <div>
+                            <div>
                                 <p className="text-xs text-zinc-500">Gross Yield</p>
                                 <p className="font-bold text-indigo-600 text-lg">{grossYield.toFixed(2)}%</p>
                             </div>
-                             <div>
+                            <div>
                                 <p className="text-xs text-zinc-500">Net Yield (Est.)</p>
                                 <p className="font-bold text-green-600 text-lg">{netYield.toFixed(2)}%</p>
                             </div>
@@ -527,6 +527,7 @@ interface LandlordsPageProps {
     expenses: Expense[];
     updateMaintenanceRequest: (request: MaintenanceRequest) => void;
     emailSettings: EmailIntegrationSettings | null;
+    folders: Folder[];
 }
 
 const LandlordsPage: React.FC<LandlordsPageProps> = ({
@@ -536,11 +537,11 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
     documents, addDocument, deleteDocument,
     communicationLogs, addCommunicationLog, deleteCommunicationLog,
     documentTemplates, userProfile, rentPayments, expenses,
-    updateMaintenanceRequest, emailSettings
+    updateMaintenanceRequest, emailSettings, folders
 }) => {
     const [activeLandlord, setActiveLandlord] = useState<Landlord | null>(null);
     const [activeTab, setActiveTab] = useState<'dashboard' | 'properties' | 'tenants' | 'financials' | 'approvals' | 'documents' | 'activity'>('dashboard');
-    
+
     const [viewingProperty, setViewingProperty] = useState<Property | null>(null);
     const [viewingTenant, setViewingTenant] = useState<Tenant | null>(null);
 
@@ -555,12 +556,9 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
     const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
     const [isNewFolderModalOpen, setIsNewFolderModalOpen] = useState(false);
     const [isBulkEmailOpen, setIsBulkEmailOpen] = useState(false);
-    
-    const [folders, setFolders] = useState([
-        { name: 'Compliance & ID', count: 2 },
-        { name: 'Monthly Statements', count: 12 },
-        { name: 'Property Documents', count: 5 },
-    ]);
+    const [isAddClientOpen, setIsAddClientOpen] = useState(false);
+
+    // Removed local dummy folders state in favor of prop
 
     // --- MOVED HOOK HERE ---
     const filteredLandlords = useMemo(() => {
@@ -568,12 +566,12 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
     }, [landlords, viewArchived]);
 
     const getLandlordProperties = (landlordName: string) => properties.filter(p => p.ownerName === landlordName);
-    
+
     const handleApprove = (id: string) => {
         const req = approvalRequests.find(r => r.id === id);
         if (req) {
             updateApprovalRequest({ ...req, status: 'Approved', actionDate: new Date().toISOString() });
-            
+
             // Automatically update maintenance request status if linked
             if (req.maintenanceRequestId) {
                 const linkedMaintReq = maintenanceRequests.find(m => m.id === req.maintenanceRequestId);
@@ -602,9 +600,15 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
     }
 
     const handleCreateFolder = (name: string) => {
-        setFolders(prev => [...prev, { name, count: 0 }]);
+        // Placeholder: Implement addFolder logic if passed or handle via DocumentSection
+        console.log("Create folder:", name);
     }
-    
+
+    const handleAddClient = (landlord: Landlord) => {
+        addLandlord(landlord);
+        setIsAddClientOpen(false);
+    }
+
     const handleArchiveLandlord = (landlord: Landlord) => {
         if (window.confirm(`Archive client ${landlord.name}?`)) {
             updateLandlord({ ...landlord, isArchived: true, status: 'Inactive' });
@@ -655,10 +659,10 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
 
             // Fallback to simulated rent if no payments logged yet, but respect filters
             if (relevantPayments.length === 0 && filterTime === 'all' && filterTenant === 'all') {
-                 if (rentPayments.length === 0) {
-                     const propTenants = tenants.filter(t => t.propertyId === prop.id);
-                     propRent = propTenants.reduce((sum, t) => sum + (t.rentAmount || 0), 0);
-                 }
+                if (rentPayments.length === 0) {
+                    const propTenants = tenants.filter(t => t.propertyId === prop.id);
+                    propRent = propTenants.reduce((sum, t) => sum + (t.rentAmount || 0), 0);
+                }
             }
 
             // Expenses
@@ -730,19 +734,19 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div className="flex flex-wrap gap-y-2 gap-x-6 text-sm text-zinc-600">
                                     <div className="flex items-center gap-2">
-                                        <EnvelopeIcon className="w-4 h-4 text-zinc-400"/>
+                                        <EnvelopeIcon className="w-4 h-4 text-zinc-400" />
                                         <a href={`mailto:${activeLandlord.email}`} className="hover:text-zinc-900">{activeLandlord.email}</a>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <PhoneIcon className="w-4 h-4 text-zinc-400"/>
+                                        <PhoneIcon className="w-4 h-4 text-zinc-400" />
                                         <span>{activeLandlord.phone}</span>
                                     </div>
                                     {activeLandlord.address && (
                                         <div className="flex items-center gap-2 w-full md:w-auto">
-                                            <MapPinIcon className="w-4 h-4 text-zinc-400"/>
+                                            <MapPinIcon className="w-4 h-4 text-zinc-400" />
                                             <span>{activeLandlord.address}</span>
                                         </div>
                                     )}
@@ -755,9 +759,9 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
                                     <div>
                                         <p className="text-xs font-bold text-indigo-900 uppercase tracking-wide mb-1">Dori's Insight</p>
                                         <p className="text-sm text-zinc-600 leading-snug">
-                                            {activeLandlord.name.split(' ')[0]} is {activeLandlord.sentiment.toLowerCase()}. 
-                                            {landlordApprovals.filter(a => a.status === 'Sent').length > 0 
-                                                ? <span className="text-indigo-600 font-medium"> {landlordApprovals.filter(a => a.status === 'Sent').length} items pending approval.</span> 
+                                            {activeLandlord.name.split(' ')[0]} is {activeLandlord.sentiment.toLowerCase()}.
+                                            {landlordApprovals.filter(a => a.status === 'Sent').length > 0
+                                                ? <span className="text-indigo-600 font-medium"> {landlordApprovals.filter(a => a.status === 'Sent').length} items pending approval.</span>
                                                 : " Portfolio is running smoothly."}
                                         </p>
                                     </div>
@@ -774,11 +778,10 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab as any)}
-                                className={`${
-                                    activeTab === tab
-                                        ? 'border-zinc-900 text-zinc-900'
-                                        : 'border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300'
-                                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm capitalize transition-all`}
+                                className={`${activeTab === tab
+                                    ? 'border-zinc-900 text-zinc-900'
+                                    : 'border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300'
+                                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm capitalize transition-all`}
                             >
                                 {tab}
                             </button>
@@ -790,14 +793,14 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
                 <div className="space-y-6">
                     {activeTab === 'dashboard' && (
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
-                            
+
                             {/* Filtering Bar */}
                             <div className="lg:col-span-3 bg-white p-4 rounded-lg border border-zinc-200 shadow-sm flex flex-wrap gap-4 items-center">
                                 <span className="text-sm font-medium text-zinc-700 mr-2">Filter Financials:</span>
-                                <Select 
-                                    name="filterTime" 
+                                <Select
+                                    name="filterTime"
                                     containerClassName="mb-0 w-40"
-                                    value={filterTime} 
+                                    value={filterTime}
                                     onChange={(e) => setFilterTime(e.target.value)}
                                     options={[
                                         { value: 'all', label: 'All Time' },
@@ -806,20 +809,20 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
                                         { value: 'this_year', label: 'This Year' },
                                     ]}
                                 />
-                                <Select 
-                                    name="filterProperty" 
+                                <Select
+                                    name="filterProperty"
                                     containerClassName="mb-0 w-48"
-                                    value={filterProperty} 
+                                    value={filterProperty}
                                     onChange={(e) => setFilterProperty(e.target.value)}
                                     options={[
                                         { value: 'all', label: 'All Properties' },
                                         ...landlordProperties.map(p => ({ value: p.id, label: p.address }))
                                     ]}
                                 />
-                                <Select 
-                                    name="filterTenant" 
+                                <Select
+                                    name="filterTenant"
                                     containerClassName="mb-0 w-48"
-                                    value={filterTenant} 
+                                    value={filterTenant}
                                     onChange={(e) => setFilterTenant(e.target.value)}
                                     options={[
                                         { value: 'all', label: 'All Tenants' },
@@ -887,9 +890,9 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
                                 <div className="bg-white rounded-lg border border-zinc-200 shadow-sm p-4">
                                     <h3 className="font-semibold text-zinc-900 mb-3">Quick Actions</h3>
                                     <div className="space-y-2">
-                                        <Button size="sm" variant="outline" className="w-full justify-start" leftIcon={<DocumentTextIcon className="w-4 h-4"/>}>Generate Statement</Button>
-                                        <Button size="sm" variant="outline" className="w-full justify-start" leftIcon={<ArrowTrendingUpIcon className="w-4 h-4"/>} onClick={() => setIsYieldModalOpen(true)}>Run Yield Report</Button>
-                                        <Button size="sm" variant="outline" className="w-full justify-start" leftIcon={<EnvelopeIcon className="w-4 h-4"/>}>Email Landlord</Button>
+                                        <Button size="sm" variant="outline" className="w-full justify-start" leftIcon={<DocumentTextIcon className="w-4 h-4" />}>Generate Statement</Button>
+                                        <Button size="sm" variant="outline" className="w-full justify-start" leftIcon={<ArrowTrendingUpIcon className="w-4 h-4" />} onClick={() => setIsYieldModalOpen(true)}>Run Yield Report</Button>
+                                        <Button size="sm" variant="outline" className="w-full justify-start" leftIcon={<EnvelopeIcon className="w-4 h-4" />}>Email Landlord</Button>
                                     </div>
                                 </div>
                                 <div className="bg-white rounded-lg border border-zinc-200 shadow-sm p-4">
@@ -931,8 +934,8 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
                                             )}
                                         </div>
                                         <div className="text-xs text-zinc-500 mt-2 flex items-center justify-between border-t border-zinc-50 pt-2">
-                                            <span className="flex items-center"><BanknotesIcon className="w-3 h-3 mr-1"/> Value: £{p.value?.toLocaleString()}</span>
-                                            <span className="flex items-center"><CurrencyDollarIconSolid className="w-3 h-3 mr-1 text-indigo-400"/> Fee: {p.managementFeeType === 'Fixed' ? '£' : ''}{p.managementFeeValue}{p.managementFeeType === 'Percentage' ? '%' : ''}</span>
+                                            <span className="flex items-center"><BanknotesIcon className="w-3 h-3 mr-1" /> Value: £{p.value?.toLocaleString()}</span>
+                                            <span className="flex items-center"><CurrencyDollarIconSolid className="w-3 h-3 mr-1 text-indigo-400" /> Fee: {p.managementFeeType === 'Fixed' ? '£' : ''}{p.managementFeeValue}{p.managementFeeType === 'Percentage' ? '%' : ''}</span>
                                         </div>
                                     </div>
                                 );
@@ -948,10 +951,10 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
 
                     {activeTab === 'approvals' && (
                         <div className="animate-fade-in">
-                            <ApprovalWorkflowHub 
-                                approvals={landlordApprovals} 
-                                onApprove={handleApprove} 
-                                onReject={handleReject} 
+                            <ApprovalWorkflowHub
+                                approvals={landlordApprovals}
+                                onApprove={handleApprove}
+                                onReject={handleReject}
                                 onCreateRequest={() => setIsApprovalModalOpen(true)}
                             />
                         </div>
@@ -959,7 +962,7 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
 
                     {activeTab === 'documents' && (
                         <div className="animate-fade-in">
-                            <DocumentVault 
+                            <DocumentVault
                                 landlordId={activeLandlord.id}
                                 documents={documents}
                                 addDocument={addDocument}
@@ -977,7 +980,7 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
 
                 {/* Details Modals */}
                 {viewingProperty && (
-                    <PropertyDetailsModal 
+                    <PropertyDetailsModal
                         property={viewingProperty}
                         tenants={tenants}
                         maintenanceRequests={maintenanceRequests}
@@ -991,7 +994,7 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
                         documentTemplates={documentTemplates}
                         properties={properties}
                         userProfile={userProfile}
-                        onMarketAnalysis={() => {}}
+                        onMarketAnalysis={() => { }}
                     />
                 )}
                 {viewingTenant && (
@@ -1005,16 +1008,17 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
                         communicationLogs={communicationLogs}
                         addCommunicationLog={addCommunicationLog}
                         deleteCommunicationLog={deleteCommunicationLog}
-                        onStartChat={() => {}}
+                        onStartChat={() => { }}
                         documentTemplates={documentTemplates}
                         properties={properties}
                         tenants={tenants}
                         userProfile={userProfile}
+                        folders={folders}
                     />
                 )}
 
-                <YieldReportModal 
-                    isOpen={isYieldModalOpen} 
+                <YieldReportModal
+                    isOpen={isYieldModalOpen}
                     onClose={() => setIsYieldModalOpen(false)}
                     propertyFinancials={propertyFinancials}
                     totalValue={portfolioValue}
@@ -1033,6 +1037,12 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
                     onClose={() => setIsNewFolderModalOpen(false)}
                     onSubmit={handleCreateFolder}
                 />
+
+                <AddClientModal
+                    isOpen={isAddClientOpen}
+                    onClose={() => setIsAddClientOpen(false)}
+                    onSubmit={handleAddClient}
+                />
             </div>
         );
     }
@@ -1040,17 +1050,17 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
     // Directory View
     return (
         <div className="animate-slide-in-left">
-            <PageHeader 
-                title="Landlords" 
+            <PageHeader
+                title="Landlords"
                 subtitle={`Manage relationships with your ${landlords.length} property owners.`}
                 actions={
                     <div className="flex gap-2">
                         {emailSettings?.isActive && (
-                            <Button variant="secondary" onClick={() => setIsBulkEmailOpen(true)} leftIcon={<AtSymbolIcon className="w-5 h-5"/>}>
+                            <Button variant="secondary" onClick={() => setIsBulkEmailOpen(true)} leftIcon={<AtSymbolIcon className="w-5 h-5" />}>
                                 Bulk Email
                             </Button>
                         )}
-                        <Button onClick={() => alert("Mock add landlord")} leftIcon={<PlusCircleIcon className="w-5 h-5"/>}>
+                        <Button onClick={() => setIsAddClientOpen(true)} leftIcon={<PlusCircleIcon className="w-5 h-5" />}>
                             Add Client
                         </Button>
                     </div>
@@ -1066,13 +1076,13 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
                     <button className="px-4 py-1.5 rounded-full bg-white border border-zinc-200 text-zinc-600 text-sm font-medium hover:bg-zinc-50">At Risk</button>
                 </div>
                 <div className="flex bg-zinc-100 p-1 rounded-lg border border-zinc-200 flex-shrink-0">
-                    <button 
+                    <button
                         onClick={() => setViewArchived(false)}
                         className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${!viewArchived ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
                     >
                         Active
                     </button>
-                    <button 
+                    <button
                         onClick={() => setViewArchived(true)}
                         className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewArchived ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
                     >
@@ -1084,7 +1094,7 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
             {filteredLandlords.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filteredLandlords.map(landlord => (
-                        <LandlordCard 
+                        <LandlordCard
                             key={landlord.id}
                             landlord={landlord}
                             properties={properties}
@@ -1097,20 +1107,26 @@ const LandlordsPage: React.FC<LandlordsPageProps> = ({
                 </div>
             ) : (
                 <div className="text-center py-16 bg-white rounded-lg border border-dashed border-zinc-200">
-                    <UserGroupIcon className="w-16 h-16 mx-auto text-zinc-300 mb-4"/>
+                    <UserGroupIcon className="w-16 h-16 mx-auto text-zinc-300 mb-4" />
                     <h3 className="text-lg font-semibold text-zinc-900">No {viewArchived ? 'archived' : ''} clients found</h3>
                     <p className="text-sm text-zinc-500 mb-6">{viewArchived ? "You haven't archived any clients yet." : "Add your first landlord to get started."}</p>
                 </div>
             )}
 
             {isBulkEmailOpen && (
-                <BulkEmailModal 
+                <BulkEmailModal
                     isOpen={isBulkEmailOpen}
                     onClose={() => setIsBulkEmailOpen(false)}
                     recipients={bulkEmailRecipients}
                     context="Landlords"
                 />
             )}
+
+            <AddClientModal
+                isOpen={isAddClientOpen}
+                onClose={() => setIsAddClientOpen(false)}
+                onSubmit={handleAddClient}
+            />
         </div>
     );
 };

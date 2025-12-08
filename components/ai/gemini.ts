@@ -4,18 +4,18 @@ import { Tenant, CrmData, DocumentTemplate, Property, UserProfile, MarketAnalysi
 
 // Utility to convert file to base64
 const fileToGenerativePart = async (file: File) => {
-  const base64EncodedDataPromise = new Promise<string>((resolve) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string') {
-        resolve(reader.result.split(',')[1]);
-      }
+    const base64EncodedDataPromise = new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            if (typeof reader.result === 'string') {
+                resolve(reader.result.split(',')[1]);
+            }
+        };
+        reader.readAsDataURL(file);
+    });
+    return {
+        inlineData: { data: await base64EncodedDataPromise, mimeType: file.type },
     };
-    reader.readAsDataURL(file);
-  });
-  return {
-    inlineData: { data: await base64EncodedDataPromise, mimeType: file.type },
-  };
 };
 
 const leaseSchema = {
@@ -47,11 +47,12 @@ const leaseSchema = {
 
 
 export const extractLeaseDetailsFromFile = async (file: File): Promise<Partial<Tenant>> => {
-    if (!process.env.API_KEY) {
-        console.error("API_KEY environment variable not set.");
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+        console.error("VITE_GEMINI_API_KEY environment variable not set.");
         throw new Error("AI features are not configured. Please contact support.");
     }
-    const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+    const ai = new GoogleGenAI({ apiKey });
 
     const filePart = await fileToGenerativePart(file);
     const prompt = "Analyze the provided lease agreement document (which could be an image, PDF, or Word document) and extract the tenant's name, lease start date, lease end date, monthly rent amount, and security deposit amount. Format the output as JSON according to the provided schema.";
@@ -59,7 +60,7 @@ export const extractLeaseDetailsFromFile = async (file: File): Promise<Partial<T
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
-            contents: { parts: [ { text: prompt }, filePart ]},
+            contents: { parts: [{ text: prompt }, filePart] },
             config: {
                 responseMimeType: "application/json",
                 responseSchema: leaseSchema,
@@ -87,61 +88,63 @@ export const extractLeaseDetailsFromFile = async (file: File): Promise<Partial<T
 }
 
 export const queryCrmData = async (
-  query: string,
-  crmData: CrmData,
+    query: string,
+    crmData: CrmData,
 ): Promise<string> => {
-  if (!process.env.API_KEY) {
-    console.error("API_KEY environment variable not set.");
-    throw new Error("AI features are not configured. Please contact support.");
-  }
-  const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+        console.error("VITE_GEMINI_API_KEY environment variable not set.");
+        throw new Error("AI features are not configured. Please contact support.");
+    }
+    const ai = new GoogleGenAI({ apiKey });
 
-  const systemInstruction = "You are an expert AI assistant for the 'Doorap' property management platform. Analyze the provided comprehensive CRM data (in JSON format) to answer the user's question. Provide concise, natural language answers. Do not return JSON or code.";
+    const systemInstruction = "You are an expert AI assistant for the 'Doorap' property management platform. Analyze the provided comprehensive CRM data (in JSON format) to answer the user's question. Provide concise, natural language answers. Do not return JSON or code.";
 
-  // Clean data to remove large, unnecessary fields and save tokens
-  const cleanCrmData: Partial<CrmData> = {
-    ...crmData,
-    properties: crmData.properties.map(({ imageUrl, customFieldValues, ...p }) => p),
-    tenants: crmData.tenants.map(({ avatarUrl, customFieldValues, ...t }) => t),
-    documents: crmData.documents.map(({ fileUrl, content, ...d }) => d) // Remove potentially long fields
-  };
+    // Clean data to remove large, unnecessary fields and save tokens
+    const cleanCrmData: Partial<CrmData> = {
+        ...crmData,
+        properties: crmData.properties.map(({ imageUrl, customFieldValues, ...p }) => p),
+        tenants: crmData.tenants.map(({ avatarUrl, customFieldValues, ...t }) => t),
+        documents: crmData.documents.map(({ fileUrl, content, ...d }) => d) // Remove potentially long fields
+    };
 
 
-  const dataContext = `
+    const dataContext = `
     Here is the complete CRM data for the portfolio:
     ${JSON.stringify(cleanCrmData, null, 2)}
   `;
 
-  const userPrompt = `
+    const userPrompt = `
     Based on the data provided, please answer the following question: "${query}"
   `;
-  
-  const fullPrompt = `${dataContext}\n\n${userPrompt}`;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: fullPrompt,
-      config: {
-        systemInstruction: systemInstruction,
-      }
-    });
+    const fullPrompt = `${dataContext}\n\n${userPrompt}`;
 
-    return response.text;
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: fullPrompt,
+            config: {
+                systemInstruction: systemInstruction,
+            }
+        });
 
-  } catch (error) {
-    console.error("Error querying CRM data from Gemini:", error);
-    throw new Error("Failed to get insights from AI. The model may be busy or the query could not be processed. Please try again later.");
-  }
+        return response.text;
+
+    } catch (error) {
+        console.error("Error querying CRM data from Gemini:", error);
+        throw new Error("Failed to get insights from AI. The model may be busy or the query could not be processed. Please try again later.");
+    }
 };
 
 export const generateVacancyDescription = async (keywords: string): Promise<string> => {
-    if (!process.env.API_KEY) {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
         throw new Error("AI features are not configured.");
     }
-    const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+    const ai = new GoogleGenAI({ apiKey });
     const prompt = `Generate a compelling and professional property listing description for a rental property. Use the following keywords and features to craft the description: "${keywords}". The description should be engaging for potential tenants and highlight the best features. Do not use markdown or special formatting.`;
-    
+
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
@@ -162,12 +165,13 @@ export const generateDocumentFromTemplate = async (
         userProfile?: UserProfile;
     }
 ): Promise<string> => {
-    if (!process.env.API_KEY) {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
         throw new Error("AI features are not configured.");
     }
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    
-    const systemInstruction = "You are an AI assistant that populates document templates. You will be given a template with placeholders like {{PLACEHOLDER}} and a JSON object with context data. Your task is to replace the placeholders with the correct data from the context. If a piece of data is missing from the context for a placeholder, replace the placeholder with 'N/A'. Return only the final, populated document as plain text.";
+    const ai = new GoogleGenAI({ apiKey });
+
+    const systemInstruction = "You are an AI assistant that populates document templates. You will be given a template with placeholders like {{PLACEHOLDER}} and a JSON object with context data. Your task is to replace the placeholders with the correct data from the context. If a piece of data is missing from the context for a placeholder, replace the placeholder with 'N/A'. IMPORTANT: Return the FULL, EXPANDED document. Do not summarize. Do not truncate. The output must be the complete legal or professional document text ready for use.";
 
     const prompt = `
         Here is the document template:
@@ -180,7 +184,7 @@ export const generateDocumentFromTemplate = async (
         ${JSON.stringify(context, null, 2)}
         ---
 
-        Please populate the template with the provided data.
+        Please populate the template with the provided data and return the full document.
     `;
 
     try {
@@ -219,10 +223,11 @@ const templateGenerationSchema = {
 }
 
 export const generateDocumentTemplate = async (description: string): Promise<Partial<DocumentTemplate>> => {
-    if (!process.env.API_KEY) {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
         throw new Error("AI features are not configured.");
     }
-    const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+    const ai = new GoogleGenAI({ apiKey });
 
     const systemInstruction = "You are an expert AI assistant that creates professional document templates for property managers. Based on the user's request, generate a document template. You must include common, relevant placeholders in double curly braces, e.g., {{TENANT_NAME}}, {{PROPERTY_ADDRESS}}, {{RENT_AMOUNT}}, {{USER_NAME}}, {{USER_COMPANY}}. Format the output as JSON according to the provided schema.";
 
@@ -298,14 +303,15 @@ const marketAnalysisSchema = {
 };
 
 export const getMarketAnalysis = async (
-  property: Property,
-  tenants: Tenant[]
+    property: Property,
+    tenants: Tenant[]
 ): Promise<MarketAnalysis> => {
-    if (!process.env.API_KEY) {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
         throw new Error("AI features are not configured.");
     }
-    const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
-    
+    const ai = new GoogleGenAI({ apiKey });
+
     const propertyTenants = tenants.filter(t => t.propertyId === property.id).map(t => ({ name: t.name, rentAmount: t.rentAmount }));
     const { customFieldValues, ...propertyDetails } = property; // Omit custom fields for brevity
 
@@ -369,10 +375,11 @@ export const compareInventoryDocuments = async (
     checkInFile: File,
     checkOutFile: File
 ): Promise<string> => {
-    if (!process.env.API_KEY) {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
         throw new Error("AI features are not configured.");
     }
-    const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+    const ai = new GoogleGenAI({ apiKey });
 
     const checkInPart = await fileToGenerativePart(checkInFile);
     const checkOutPart = await fileToGenerativePart(checkOutFile);
@@ -392,7 +399,7 @@ export const compareInventoryDocuments = async (
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
-            contents: { parts: [ { text: prompt }, checkInPart, checkOutPart ]},
+            contents: { parts: [{ text: prompt }, checkInPart, checkOutPart] },
         });
 
         return response.text;
@@ -412,10 +419,11 @@ export const generateEmergencyChecklist = async (
     title: string,
     description: string
 ): Promise<string[]> => {
-    if (!process.env.API_KEY) {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
         throw new Error("AI features are not configured.");
     }
-    const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+    const ai = new GoogleGenAI({ apiKey });
 
     const systemInstruction = "You are an expert property manager and safety officer. Your job is to provide a concise, actionable checklist of 3-5 immediate steps required to handle a specific property emergency. Focus on safety, compliance (UK laws like RIDDOR/Gas Safety), and limiting damage. Return ONLY a JSON array of strings.";
 

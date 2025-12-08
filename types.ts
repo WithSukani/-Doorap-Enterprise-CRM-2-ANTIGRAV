@@ -106,24 +106,24 @@ export const InspectionItemStatus = Object.freeze({
 } as const);
 
 export const ExpenseCategory = Object.freeze({
-    REPAIRS_MAINTENANCE: "Repairs & Maintenance",
-    UTILITIES: "Utilities",
-    INSURANCE: "Insurance",
-    MANAGEMENT_FEES: "Management Fees",
-    PROPERTY_TAXES: "Property Taxes",
-    MORTGAGE: "Mortgage",
-    MARKETING: "Marketing",
-    LEGAL_FEES: "Legal Fees",
-    OTHER: "Other"
+  REPAIRS_MAINTENANCE: "Repairs & Maintenance",
+  UTILITIES: "Utilities",
+  INSURANCE: "Insurance",
+  MANAGEMENT_FEES: "Management Fees",
+  PROPERTY_TAXES: "Property Taxes",
+  MORTGAGE: "Mortgage",
+  MARKETING: "Marketing",
+  LEGAL_FEES: "Legal Fees",
+  OTHER: "Other"
 } as const);
 
 export const CustomFieldType = Object.freeze({
-    TEXT: "Text",
-    TEXTAREA: "Textarea",
-    NUMBER: "Number",
-    DATE: "Date",
-    CHECKBOX: "Checkbox",
-    SELECT: "Select",
+  TEXT: "Text",
+  TEXTAREA: "Textarea",
+  NUMBER: "Number",
+  DATE: "Date",
+  CHECKBOX: "Checkbox",
+  SELECT: "Select",
 } as const);
 
 
@@ -222,10 +222,11 @@ export interface Document {
 }
 
 export interface Folder {
-    id: string;
-    name: string;
-    type: 'system' | 'custom';
-    icon?: string;
+  id: string;
+  name: string;
+  type: 'system' | 'custom';
+  icon?: string;
+  parentId?: string;
 }
 
 export type CommunicationLogParentType = 'property' | 'tenant' | 'maintenance_request' | 'applicant' | 'inspection';
@@ -251,16 +252,17 @@ export interface UserProfile {
   stripePayoutsEnabled?: boolean; // New
 }
 
-export type NotificationParentType = 'reminder' | 'maintenance_request' | 'tenant' | 'document' | 'task' | 'inspection' | 'general';
+// Updated Notification Interface matching DB
 export interface Notification {
   id: string;
-  type: (typeof NotificationType)[keyof typeof NotificationType];
+  userId: string;
+  type: 'info' | 'warning' | 'success' | 'error';
+  category: 'message' | 'maintenance' | 'finance' | 'compliance' | 'system';
+  title: string;
   message: string;
-  date: string; // ISO string
-  isRead: boolean;
-  parentId?: string;
-  parentType?: NotificationParentType;
-  linkTo?: string;
+  linkUrl?: string; // Mapped from link_url
+  isRead: boolean; // Mapped from is_read
+  createdAt: string; // Mapped from created_at
 }
 
 // Chat related types
@@ -285,13 +287,13 @@ export interface ChatSession {
 
 // Financials
 export interface BankAccount {
-    id: string;
-    name: string;
-    last4: string;
-    balance: number;
-    currency: string;
-    status: 'Active' | 'Inactive';
-    type: 'Checking' | 'Savings';
+  id: string;
+  name: string;
+  last4: string;
+  balance: number;
+  currency: string;
+  status: 'Active' | 'Inactive';
+  type: 'Checking' | 'Savings';
 }
 
 export interface RentPayment {
@@ -319,36 +321,36 @@ export interface Expense {
 }
 
 export interface RecurringPayment {
-    id: string;
-    type: 'Direct Debit' | 'Standing Order';
-    vendor: string;
-    reference: string;
-    amount: number;
-    frequency: 'Monthly' | 'Quarterly' | 'Annually';
-    nextDueDate: string;
-    status: 'Active' | 'Paused' | 'Review Needed';
-    propertyId?: string;
+  id: string;
+  type: 'Direct Debit' | 'Standing Order';
+  vendor: string;
+  reference: string;
+  amount: number;
+  frequency: 'Monthly' | 'Quarterly' | 'Annually';
+  nextDueDate: string;
+  status: 'Active' | 'Paused' | 'Review Needed';
+  propertyId?: string;
 }
 
 export interface PaymentLink {
-    id: string;
-    payerId: string; // Tenant ID or Landlord ID
-    payerType: 'Tenant' | 'Landlord';
-    amount: number;
-    description: string;
-    status: 'Open' | 'Paid' | 'Expired';
-    createdAt: string;
-    url: string;
-    frequency?: 'One-off' | 'Weekly' | 'Monthly';
+  id: string;
+  payerId: string; // Tenant ID or Landlord ID
+  payerType: 'Tenant' | 'Landlord';
+  amount: number;
+  description: string;
+  status: 'Open' | 'Paid' | 'Expired';
+  createdAt: string;
+  url: string;
+  frequency?: 'One-off' | 'Weekly' | 'Monthly';
 }
 
 export interface ArrearChaseLog {
-    id: string;
-    tenantId: string;
-    amountOverdue: number;
-    lastChasedDate: string;
-    chaseCount: number;
-    status: 'Active' | 'Resolved';
+  id: string;
+  tenantId: string;
+  amountOverdue: number;
+  lastChasedDate: string;
+  chaseCount: number;
+  status: 'Active' | 'Resolved';
 }
 
 // Document Templates
@@ -357,6 +359,8 @@ export interface DocumentTemplate {
   name: string;
   category: string; // e.g., 'Lease', 'Notice', 'Inspection'
   content: string; // Could be markdown, HTML, or structured JSON
+  description?: string;
+  folderId?: string;
 }
 
 // Tasks
@@ -376,9 +380,9 @@ export interface Task {
 
 // Vacancy Management
 export interface PortalStatus {
-    rightmove: 'Not Listed' | 'Pending' | 'Live' | 'Error';
-    zoopla: 'Not Listed' | 'Pending' | 'Live' | 'Error';
-    onthemarket: 'Not Listed' | 'Pending' | 'Live' | 'Error';
+  rightmove: 'Not Listed' | 'Pending' | 'Live' | 'Error';
+  zoopla: 'Not Listed' | 'Pending' | 'Live' | 'Error';
+  onthemarket: 'Not Listed' | 'Pending' | 'Live' | 'Error';
 }
 
 export interface Vacancy {
@@ -462,25 +466,25 @@ export interface ApprovalRequest {
 
 // Team Members (Internal)
 export interface TeamMember {
-    id: string;
-    name: string;
-    email: string;
-    role: 'Admin' | 'Property Manager' | 'Viewer' | 'Maintenance';
-    status: 'Active' | 'Invited' | 'Deactivated';
-    avatarUrl?: string;
-    lastLogin?: string;
+  id: string;
+  name: string;
+  email: string;
+  role: 'Admin' | 'Property Manager' | 'Viewer' | 'Maintenance';
+  status: 'Active' | 'Invited' | 'Deactivated';
+  avatarUrl?: string;
+  lastLogin?: string;
 }
 
 // Calendar Event (utility type for displaying various items on a calendar)
 export interface CalendarEvent {
-    id: string;
-    title: string;
-    start: string; // ISO Date string
-    end?: string; // ISO Date string (optional for multi-day or timed events)
-    type: 'reminder' | 'task' | 'lease_expiry' | 'document_expiry' | 'inspection' | 'applicant';
-    color?: string; // Optional color for event type
-    link?: string; // Link to the item in the app
-    data?: Reminder | Task | Tenant | Document | Inspection | Applicant; // Original data object
+  id: string;
+  title: string;
+  start: string; // ISO Date string
+  end?: string; // ISO Date string (optional for multi-day or timed events)
+  type: 'reminder' | 'task' | 'lease_expiry' | 'document_expiry' | 'inspection' | 'applicant';
+  color?: string; // Optional color for event type
+  link?: string; // Link to the item in the app
+  data?: Reminder | Task | Tenant | Document | Inspection | Applicant; // Original data object
 }
 
 export type CustomFieldEntityType = 'property' | 'tenant' | 'maintenance_request';
@@ -512,33 +516,33 @@ export interface MarketAnalysis {
 // --- Tenancy Lifecycle Types ---
 
 export interface MeterReading {
-    id: string;
-    propertyId: string;
-    type: 'Gas' | 'Electric' | 'Water';
-    reading: number;
-    date: string; // ISO Date
-    photoUrl?: string;
-    context: 'Move In' | 'Move Out' | 'Routine';
+  id: string;
+  propertyId: string;
+  type: 'Gas' | 'Electric' | 'Water';
+  reading: number;
+  date: string; // ISO Date
+  photoUrl?: string;
+  context: 'Move In' | 'Move Out' | 'Routine';
 }
 
 export interface InventoryItem {
-    id: string;
-    name: string; // e.g., "Living Room Walls"
-    conditionCheckIn: string; // "Good, clean"
-    photoCheckIn?: string;
-    conditionCheckOut?: string;
-    photoCheckOut?: string;
-    aiAssessment?: 'Fair Wear' | 'Tenant Damage' | 'Landlord Responsibility';
-    deductionAmount?: number;
+  id: string;
+  name: string; // e.g., "Living Room Walls"
+  conditionCheckIn: string; // "Good, clean"
+  photoCheckIn?: string;
+  conditionCheckOut?: string;
+  photoCheckOut?: string;
+  aiAssessment?: 'Fair Wear' | 'Tenant Damage' | 'Landlord Responsibility';
+  deductionAmount?: number;
 }
 
 export interface InventoryCheck {
-    id: string;
-    propertyId: string;
-    tenantId: string;
-    type: 'Check In' | 'Check Out';
-    date: string;
-    items: InventoryItem[];
+  id: string;
+  propertyId: string;
+  tenantId: string;
+  type: 'Check In' | 'Check Out';
+  date: string;
+  items: InventoryItem[];
 }
 
 // --- Dori AI Types ---
@@ -570,10 +574,10 @@ export interface DoriAction {
 }
 
 export interface AutomationStep {
-    id: string;
-    type: 'action' | 'condition' | 'delay';
-    description: string;
-    config?: any;
+  id: string;
+  type: 'action' | 'condition' | 'delay';
+  description: string;
+  config?: any;
 }
 
 export interface AutomationWorkflow {
@@ -586,70 +590,70 @@ export interface AutomationWorkflow {
 }
 
 export interface EmergencyChecklistItem {
-    label: string;
-    checked: boolean;
+  label: string;
+  checked: boolean;
 }
 
 export interface EmergencyItem {
-    id: string;
-    title: string;
-    description: string;
-    severity: 'Critical' | 'High';
-    status: 'Open' | 'Resolved';
-    timestamp: string;
-    relatedId?: string;
-    checklist?: EmergencyChecklistItem[];
+  id: string;
+  title: string;
+  description: string;
+  severity: 'Critical' | 'High';
+  status: 'Open' | 'Resolved';
+  timestamp: string;
+  relatedId?: string;
+  checklist?: EmergencyChecklistItem[];
 }
 
 export interface DoriExecutionStep {
-    id: string;
-    timestamp: string;
-    description: string;
-    status: 'Completed' | 'Pending' | 'Failed' | 'Skipped';
+  id: string;
+  timestamp: string;
+  description: string;
+  status: 'Completed' | 'Pending' | 'Failed' | 'Skipped';
 }
 
 export interface DoriExecution {
-    id: string;
-    workflowName: string;
-    entityName: string;
-    entityRole: string;
-    status: 'Running' | 'Completed' | 'Failed' | 'Waiting' | 'Cancelled';
-    startTime: string;
-    steps: DoriExecutionStep[];
+  id: string;
+  workflowName: string;
+  entityName: string;
+  entityRole: string;
+  status: 'Running' | 'Completed' | 'Failed' | 'Waiting' | 'Cancelled';
+  startTime: string;
+  steps: DoriExecutionStep[];
 }
 
 export interface EmailIntegrationSettings {
-    provider: 'sendgrid';
-    apiKey: string;
-    fromName: string;
-    fromEmail: string;
-    isActive: boolean;
+  provider: 'sendgrid';
+  apiKey: string;
+  fromName: string;
+  fromEmail: string;
+  isActive: boolean;
 }
 
 export interface PortalIntegrationSettings {
-    rightmove: { isActive: boolean; branchId?: string; certificate?: string };
-    zoopla: { isActive: boolean; branchId?: string; apiKey?: string };
+  rightmove: { isActive: boolean; branchId?: string; certificate?: string };
+  zoopla: { isActive: boolean; branchId?: string; apiKey?: string };
 }
 
 export interface CrmData {
-    properties: Property[];
-    tenants: Tenant[];
-    maintenanceRequests: MaintenanceRequest[];
-    reminders: Reminder[];
-    documents: Document[];
-    communicationLogs: CommunicationLog[];
-    rentPayments: RentPayment[];
-    expenses: Expense[];
-    tasks: Task[];
-    vacancies: Vacancy[];
-    applicants: Applicant[];
-    inspections: Inspection[];
-    userProfile: UserProfile;
-    documentTemplates: DocumentTemplate[];
-    customFieldDefinitions?: CustomFieldDefinition[];
-    landlords?: Landlord[];
-    meterReadings?: MeterReading[];
-    inventoryChecks?: InventoryCheck[];
-    teamMembers?: TeamMember[];
-    bankAccounts?: BankAccount[];
+  properties: Property[];
+  tenants: Tenant[];
+  maintenanceRequests: MaintenanceRequest[];
+  reminders: Reminder[];
+  documents: Document[];
+  communicationLogs: CommunicationLog[];
+  rentPayments: RentPayment[];
+  expenses: Expense[];
+  tasks: Task[];
+  vacancies: Vacancy[];
+  applicants: Applicant[];
+  inspections: Inspection[];
+  userProfile: UserProfile;
+  documentTemplates: DocumentTemplate[];
+  customFieldDefinitions?: CustomFieldDefinition[];
+  landlords?: Landlord[];
+  meterReadings?: MeterReading[];
+  inventoryChecks?: InventoryCheck[];
+  teamMembers?: TeamMember[];
+  bankAccounts?: BankAccount[];
 }
