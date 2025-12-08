@@ -7,9 +7,9 @@ import DocumentForm from '../forms/DocumentForm';
 import DocumentGenerationModal from '../modals/DocumentGenerationModal';
 import Modal from '../common/Modal';
 import Input from '../common/Input';
-import {
-    FolderIcon, FolderOpenIcon, DocumentTextIcon, PlusCircleIcon,
-    ArrowDownLeftIcon, SparklesIcon, TrashIcon, PencilIcon, MagnifyingGlassIcon
+import { 
+    FolderIcon, FolderOpenIcon, DocumentTextIcon, PlusCircleIcon, 
+    ArrowDownLeftIcon, SparklesIcon, TrashIcon, PencilIcon, MagnifyingGlassIcon 
 } from '../icons/HeroIcons';
 
 // Define CreateFolderModal locally since previous export might be tricky to import if not standard
@@ -56,18 +56,18 @@ const DocumentsPage: React.FC<DocumentsPageProps> = (props) => {
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
     const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
 
-    const allFolders = [...SYSTEM_FOLDERS, ...(props.folders || [])];
+    const allFolders = [...SYSTEM_FOLDERS, ...props.folders];
 
     const filteredDocuments = useMemo(() => {
-        return (props.documents || []).filter(doc => {
+        return props.documents.filter(doc => {
             const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase());
             let matchesFolder = true;
             if (activeFolderId === 'all') matchesFolder = true;
             else if (activeFolderId === 'lease') matchesFolder = doc.type.toLowerCase().includes('lease') || doc.type.toLowerCase().includes('agreement');
             else if (activeFolderId === 'compliance') matchesFolder = doc.type.toLowerCase().includes('certificate') || doc.type.toLowerCase().includes('safety');
             else if (activeFolderId === 'finance') matchesFolder = doc.type.toLowerCase().includes('invoice') || doc.type.toLowerCase().includes('receipt') || doc.type.toLowerCase().includes('financial');
-            else matchesFolder = doc.folderId === activeFolderId;
-
+            else matchesFolder = doc.folderId === activeFolderId; 
+            
             return matchesSearch && matchesFolder;
         });
     }, [props.documents, searchTerm, activeFolderId]);
@@ -93,16 +93,17 @@ const DocumentsPage: React.FC<DocumentsPageProps> = (props) => {
                         <button
                             key={folder.id}
                             onClick={() => setActiveFolderId(folder.id)}
-                            className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeFolderId === folder.id ? 'bg-zinc-100 text-zinc-900' : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700'
-                                }`}
+                            className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                                activeFolderId === folder.id ? 'bg-zinc-100 text-zinc-900' : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700'
+                            }`}
                         >
-                            {activeFolderId === folder.id ? <FolderOpenIcon className="w-5 h-5 mr-2 text-zinc-800" /> : <FolderIcon className="w-5 h-5 mr-2 text-zinc-400" />}
+                            {activeFolderId === folder.id ? <FolderOpenIcon className="w-5 h-5 mr-2 text-zinc-800"/> : <FolderIcon className="w-5 h-5 mr-2 text-zinc-400"/>}
                             {folder.name}
                         </button>
                     ))}
                 </div>
                 <div className="p-4 border-t border-zinc-100">
-                    <Button variant="outline" size="sm" className="w-full" onClick={() => setIsCreateFolderModalOpen(true)} leftIcon={<PlusCircleIcon className="w-4 h-4" />}>New Folder</Button>
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => setIsCreateFolderModalOpen(true)} leftIcon={<PlusCircleIcon className="w-4 h-4"/>}>New Folder</Button>
                 </div>
             </div>
 
@@ -111,17 +112,17 @@ const DocumentsPage: React.FC<DocumentsPageProps> = (props) => {
                 {/* Toolbar */}
                 <div className="bg-white border-b border-zinc-200 p-4 flex justify-between items-center shadow-sm">
                     <div className="flex items-center bg-zinc-100 px-3 py-2 rounded-md w-64">
-                        <MagnifyingGlassIcon className="w-4 h-4 text-zinc-400 mr-2" />
-                        <input
-                            className="bg-transparent border-none focus:ring-0 text-sm p-0 w-full placeholder-zinc-400"
-                            placeholder="Search files..."
+                        <MagnifyingGlassIcon className="w-4 h-4 text-zinc-400 mr-2"/>
+                        <input 
+                            className="bg-transparent border-none focus:ring-0 text-sm p-0 w-full placeholder-zinc-400" 
+                            placeholder="Search files..." 
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                         />
                     </div>
                     <div className="flex gap-3">
-                        <Button onClick={() => setIsGenerateModalOpen(true)} leftIcon={<SparklesIcon className="w-5 h-5" />}>Draft with Dori</Button>
-                        <Button variant="outline" onClick={() => setIsUploadModalOpen(true)} leftIcon={<ArrowDownLeftIcon className="w-5 h-5" />}>Upload</Button>
+                        <Button onClick={() => setIsGenerateModalOpen(true)} leftIcon={<SparklesIcon className="w-5 h-5"/>}>Draft with Dori</Button>
+                        <Button variant="outline" onClick={() => setIsUploadModalOpen(true)} leftIcon={<ArrowDownLeftIcon className="w-5 h-5"/>}>Upload</Button>
                     </div>
                 </div>
 
@@ -133,10 +134,10 @@ const DocumentsPage: React.FC<DocumentsPageProps> = (props) => {
                                 <div key={doc.id} className="group bg-white p-4 rounded-lg border border-zinc-200 shadow-sm hover:shadow-md hover:border-zinc-300 transition-all cursor-pointer relative">
                                     <div className="flex items-start justify-between mb-2">
                                         <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-                                            <DocumentTextIcon className="w-6 h-6" />
+                                            <DocumentTextIcon className="w-6 h-6"/>
                                         </div>
-                                        <button onClick={(e) => { e.stopPropagation(); if (window.confirm('Delete?')) props.deleteDocument(doc.id) }} className="text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <TrashIcon className="w-4 h-4" />
+                                        <button onClick={(e) => {e.stopPropagation(); if(window.confirm('Delete?')) props.deleteDocument(doc.id)}} className="text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <TrashIcon className="w-4 h-4"/>
                                         </button>
                                     </div>
                                     <h4 className="font-medium text-zinc-900 text-sm truncate mb-1" title={doc.name}>{doc.name}</h4>
@@ -147,7 +148,7 @@ const DocumentsPage: React.FC<DocumentsPageProps> = (props) => {
                         </div>
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-zinc-400">
-                            <FolderIcon className="w-16 h-16 mb-4 opacity-20" />
+                            <FolderIcon className="w-16 h-16 mb-4 opacity-20"/>
                             <p>No documents found in this folder.</p>
                         </div>
                     )}
@@ -155,14 +156,14 @@ const DocumentsPage: React.FC<DocumentsPageProps> = (props) => {
             </div>
 
             {/* Modals */}
-            <LocalCreateFolderModal
-                isOpen={isCreateFolderModalOpen}
-                onClose={() => setIsCreateFolderModalOpen(false)}
-                onSubmit={props.addFolder}
+            <LocalCreateFolderModal 
+                isOpen={isCreateFolderModalOpen} 
+                onClose={() => setIsCreateFolderModalOpen(false)} 
+                onSubmit={props.addFolder} 
             />
-            <DocumentForm
-                isOpen={isUploadModalOpen}
-                onClose={() => setIsUploadModalOpen(false)}
+            <DocumentForm 
+                isOpen={isUploadModalOpen} 
+                onClose={() => setIsUploadModalOpen(false)} 
                 onSubmit={handleUpload}
                 parentId="general" // Default to general if uploaded directly
                 parentType="property" // Fallback
@@ -182,3 +183,4 @@ const DocumentsPage: React.FC<DocumentsPageProps> = (props) => {
 };
 
 export default DocumentsPage;
+    
