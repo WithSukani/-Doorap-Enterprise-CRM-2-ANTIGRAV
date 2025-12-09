@@ -242,6 +242,28 @@ export const DoorapService = {
         if (error) throw error;
     },
 
+    async updateTeamMember(member: Partial<TeamMember>) {
+        // Separate permissions update if needed, or update generic fields
+        const { permissions, id, ...updates } = member;
+
+        // Update basic fields
+        if (Object.keys(updates).length > 0) {
+            const { error } = await supabase.from('team_members').update(updates).eq('id', id);
+            if (error) throw error;
+        }
+
+        // Update permissions separately (or together if RLS permits) - for now updating together if passed
+        if (permissions) {
+            const { error } = await supabase.from('team_members').update({ permissions }).eq('id', id);
+            if (error) throw error;
+        }
+    },
+
+    async deleteTeamMember(memberId: string) {
+        const { error } = await supabase.from('team_members').delete().eq('id', memberId);
+        if (error) throw error;
+    },
+
     async getTeamMembers() {
         const { data, error } = await supabase.from('team_members').select('*');
         if (error) throw error;

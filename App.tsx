@@ -248,7 +248,7 @@ const App = () => {
       }
 
     }
-  }, [dbLoading, dbUserProfile, dbProperties, dbTenants, dbLandlords, dbMaintenance]);
+  }, [dbLoading, dbUserProfile, dbProperties, dbTenants, dbLandlords, dbMaintenance, dbTeamMembers]);
 
   useEffect(() => {
     const path = location.pathname.substring(1).split('?')[0] || 'dashboard';
@@ -453,9 +453,45 @@ const App = () => {
   };
 
   // Team CRUD
-  const addTeamMember = (member: TeamMember) => setTeamMembers(prev => [...prev, member]);
-  const updateTeamMember = (updated: TeamMember) => setTeamMembers(prev => prev.map(m => m.id === updated.id ? updated : m));
-  const deleteTeamMember = (id: string) => setTeamMembers(prev => prev.filter(m => m.id !== id));
+  const addTeamMember = async (member: TeamMember) => {
+    try {
+      // Use the service to securely invite via Edge Function
+      // Note: member.id is temporary here, service returns real DB record
+      const newMember = await DoorapService.inviteTeamMember(
+        member.email,
+        member.name,
+        member.role,
+        member.permissions || { canManageProperties: true, canManageTenants: true, canViewFinancials: true, canManageSettings: false, canViewLandlords: true }
+      );
+
+      // Update local state with the returned real member data (including generated ID)
+      setTeamMembers(prev => [...prev, { ...newMember, permissions: newMember.permissions as any }]);
+      alert(`Invitation sent to ${member.email}`);
+    } catch (e: any) {
+      console.error("Failed to invite team member", e);
+      alert(`Failed to invite member: ${e.message}`);
+    }
+  };
+
+  const updateTeamMember = async (updated: TeamMember) => {
+    try {
+      await DoorapService.updateTeamMember(updated);
+      setTeamMembers(prev => prev.map(m => m.id === updated.id ? updated : m));
+    } catch (e: any) {
+      console.error("Failed to update team member", e);
+      alert(`Failed to update member: ${e.message}`);
+    }
+  };
+
+  const deleteTeamMember = async (id: string) => {
+    try {
+      await DoorapService.deleteTeamMember(id);
+      setTeamMembers(prev => prev.filter(m => m.id !== id));
+    } catch (e: any) {
+      console.error("Failed to delete team member", e);
+      alert(`Failed to delete member: ${e.message}`);
+    }
+  };
 
   // Dori CRUD
   const addDoriInteraction = (item: DoriInteraction) => setDoriInteractions(prev => [item, ...prev]);
