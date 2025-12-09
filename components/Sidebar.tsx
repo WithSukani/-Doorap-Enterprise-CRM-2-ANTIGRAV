@@ -115,9 +115,9 @@ const Sidebar: React.FC<SidebarProps> = ({
           <ul className="space-y-0.5">
             {navItems.filter(item => {
               if (item.view === 'landlords') {
-                // Hide Landlords page ONLY if user is explicitly Self Managing
-                // Default to showing it if role is loading/undefined to prevent UI flicker
-                return userProfile.role === 'company' || !userProfile.role;
+                // Hide Landlords page ONLY if user is explicitly Self Managing AND has no company name
+                // If they have a Company Name, we assume they are acting as a company even if role says 'self_managing'
+                return userProfile.role === 'company' || !!userProfile.companyName || !userProfile.role;
               }
               return true;
             }).map(item => (

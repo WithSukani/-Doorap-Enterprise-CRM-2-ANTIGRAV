@@ -80,8 +80,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 
     const handleProfileSave = async () => {
         setIsSavingProfile(true);
-        // If saving company details, we are technically updating user profile
-        await updateUserProfile(profileForm);
+        // Logic: If user adds a Company Name, auto-upgrade role to 'company'
+        const updatedProfile = { ...profileForm };
+        if (updatedProfile.companyName && updatedProfile.role === 'self_managing') {
+            updatedProfile.role = 'company';
+        }
+
+        await updateUserProfile(updatedProfile);
         setIsSavingProfile(false);
         alert('Profile & Company details updated successfully.');
     };
