@@ -178,7 +178,35 @@ const App = () => {
       setDoriInteractions(dbDoriLogs || []);
 
       console.log('[App.tsx] Updating userProfile state from DB:', dbUserProfile);
-      setUserProfile(dbUserProfile || { name: '', companyName: '', email: '', phone: '' } as UserProfile);
+
+      // Fallback Logic: If DB profile is empty, use Session Metadata (critical for fresh signups)
+      let finalProfile = dbUserProfile;
+      if (!finalProfile && session?.user) {
+        console.log('[App.tsx] DB Profile empty, falling back to Session Metadata');
+        const metadata = session.user.user_metadata;
+        finalProfile = {
+          id: session.user.id,
+          name: metadata.full_name || metadata.name || `${metadata.first_name || ''} ${metadata.last_name || ''}`.trim(),
+          email: session.user.email || '',
+          companyName: metadata.company_name,
+          role: metadata.role as 'self_managing' | 'company',
+          phone: metadata.phone || '',
+          // Add default values for other required fields to avoid crashes
+          companyAddress: metadata.company_address || '',
+          companyRegNo: metadata.company_reg_no || '',
+          companyVatNumber: metadata.company_vat_number || '',
+          website: metadata.website || '',
+          jobTitle: metadata.job_title || '',
+          avatarUrl: metadata.avatar_url || '',
+          stripeConnectId: metadata.stripe_connect_id,
+          stripeDataFeedEnabled: metadata.stripe_data_feed_enabled || false,
+          stripePayoutsEnabled: metadata.stripe_payouts_enabled || false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        } as UserProfile;
+      }
+
+      setUserProfile(finalProfile || { name: '', companyName: '', email: '', phone: '' } as UserProfile);
       setTeamMembers(dbTeamMembers || []);
       setTasks(dbTasks || []);
       setVacancies(dbVacancies || []);
