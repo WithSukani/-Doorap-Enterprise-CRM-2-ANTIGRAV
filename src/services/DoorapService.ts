@@ -218,26 +218,23 @@ export const DoorapService = {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("No user logged in");
 
-        const dbMember = {
-            name,
-            email,
-            role,
-            permissions,
-            user_id: user.id,
-            status: 'Invited',
-            created_at: new Date().toISOString()
-        };
+        // Call the Edge Function to securely invite the user using Admin API
+        const { data, error } = await supabase.functions.invoke('invite-user', {
+            body: {
+                email,
+                name,
+                role,
+                permissions,
+                invited_by_user_id: user.id
+            }
+        });
 
-        const { data, error } = await supabase.from('team_members').insert(dbMember).select().single();
-        if (error) throw error;
+        if (error) {
+            console.error('[DoorapService] Invite failed:', error);
+            throw error;
+        }
 
-        // Mock email send
-        console.log(`[DoorapService] Mock Email: Inviting ${email} with permissions`, permissions);
-
-        return {
-            ...data,
-            permissions: data.permissions as PermissionSet
-        };
+        return data.member; // Return the created team_member record
     },
 
     async updateMemberPermissions(memberId: string, permissions: PermissionSet) {
