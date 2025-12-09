@@ -211,6 +211,72 @@ export const DoorapService = {
     async deleteDocument(docId: string) {
         const { error } = await supabase.from('documents').delete().eq('id', docId);
         if (error) throw error;
+    },
+
+    // --- Team Permissions ---
+    async inviteTeamMember(email: string, name: string, role: string, permissions: PermissionSet) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("No user logged in");
+
+        const dbMember = {
+            name,
+            email,
+            role,
+            permissions,
+            user_id: user.id,
+            status: 'Invited',
+            created_at: new Date().toISOString()
+        };
+
+        const { data, error } = await supabase.from('team_members').insert(dbMember).select().single();
+        if (error) throw error;
+
+        // Mock email send
+        console.log(`[DoorapService] Mock Email: Inviting ${email} with permissions`, permissions);
+
+        return {
+            ...data,
+            permissions: data.permissions as PermissionSet
+        };
+    },
+
+    async updateMemberPermissions(memberId: string, permissions: PermissionSet) {
+        const { error } = await supabase.from('team_members').update({ permissions }).eq('id', memberId);
+        if (error) throw error;
+    },
+
+    async getTeamMembers() {
+        const { data, error } = await supabase.from('team_members').select('*');
+        if (error) throw error;
+        return data.map((m: any) => ({
+            ...m,
+            permissions: m.permissions as PermissionSet, // Cast JSONB to generic
+            lastLogin: m.last_login,
+            avatarUrl: m.avatar_url,
+            authUserId: m.auth_user_id
+        }));
+    },
+
+    async getMyPermissions(): Promise<PermissionSet | null> {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
+
+        // Check if I am an owner (linked to user_profile directly, or team_member with auth_user_id)
+        // For simplicity, if row exists in team_members with my auth_id, return its permissions.
+        // If I am the creator (in user_profiles and NOT in team_members as a sub), I have ALL access.
+
+        const { data, error } = await supabase.from('team_members').select('permissions').eq('auth_user_id', user.id).single();
+
+        if (data) return data.permissions;
+
+        // If not found in team_members, assume I am the Owner (full access)
+        return {
+            canManageProperties: true,
+            canManageTenants: true,
+            canViewFinancials: true,
+            canManageSettings: true,
+            canViewLandlords: true
+        };
     }
 };
 
