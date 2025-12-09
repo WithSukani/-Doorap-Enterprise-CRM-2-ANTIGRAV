@@ -483,6 +483,15 @@ export interface ApprovalRequest {
 }
 
 // Team Members (Internal)
+// Team Members (Internal)
+export interface PermissionSet {
+  canManageProperties: boolean;
+  canManageTenants: boolean;
+  canViewFinancials: boolean;
+  canManageSettings: boolean;
+  canViewLandlords: boolean;
+}
+
 export interface TeamMember {
   id: string;
   name: string;
@@ -491,6 +500,8 @@ export interface TeamMember {
   status: 'Active' | 'Invited' | 'Deactivated';
   avatarUrl?: string;
   lastLogin?: string;
+  permissions?: PermissionSet; // Granular permissions
+  authUserId?: string; // Linked Supabase Auth ID
 }
 
 // Calendar Event (utility type for displaying various items on a calendar)

@@ -1,6 +1,6 @@
 
 import { supabase } from '../lib/supabase';
-import { Document, DocumentTemplate, Folder, Property, Tenant, Landlord, MaintenanceRequest, Reminder, Task, RentPayment, Expense, RecurringPayment, PaymentLink, Vacancy, Applicant, Inspection, InspectionChecklistItem, MeterReading, InventoryItem } from '../../types';
+import { Document, DocumentTemplate, Folder, Property, Tenant, Landlord, MaintenanceRequest, Reminder, Task, RentPayment, Expense, RecurringPayment, PaymentLink, Vacancy, Applicant, Inspection, InspectionChecklistItem, MeterReading, InventoryItem, TeamMember, PermissionSet } from '../../types';
 
 export const DoorapService = {
     // --- Properties ---

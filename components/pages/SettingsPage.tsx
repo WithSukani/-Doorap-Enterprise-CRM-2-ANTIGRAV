@@ -55,6 +55,29 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     // Team Modal State
     const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
     const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+    // State for permissions (default to all true for simplicity for now, or based on editingMember)
+    const [memberPermissions, setMemberPermissions] = useState({
+        canManageProperties: true,
+        canManageTenants: true,
+        canViewFinancials: true,
+        canManageSettings: false,
+        canViewLandlords: true
+    });
+
+    // Reset permissions when opening modal
+    React.useEffect(() => {
+        if (editingMember && editingMember.permissions) {
+            setMemberPermissions(editingMember.permissions);
+        } else {
+            setMemberPermissions({
+                canManageProperties: true,
+                canManageTenants: true,
+                canViewFinancials: true,
+                canManageSettings: false,
+                canViewLandlords: true
+            });
+        }
+    }, [editingMember, isTeamModalOpen]);
 
     // Password State
     const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
@@ -94,17 +117,22 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     const handleTeamSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const formData = new FormData(e.target as HTMLFormElement);
+
         const memberData: TeamMember = {
             id: editingMember?.id || `tm_${Date.now()}`,
             name: formData.get('name') as string,
             email: formData.get('email') as string,
             role: formData.get('role') as any,
             status: editingMember?.status || 'Invited',
-            lastLogin: editingMember?.lastLogin
+            lastLogin: editingMember?.lastLogin,
+            permissions: memberPermissions
         };
 
-        if (editingMember) updateTeamMember(memberData);
-        else addTeamMember(memberData);
+        if (editingMember) {
+            updateTeamMember(memberData);
+        } else {
+            addTeamMember(memberData);
+        }
 
         setIsTeamModalOpen(false);
         setEditingMember(null);
@@ -172,6 +200,68 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                         { value: 'Maintenance', label: 'Maintenance Staff' }
                     ]}
                 />
+
+                <div className="space-y-3 pt-2 border-t border-zinc-100">
+                    <p className="text-sm font-medium text-zinc-900">Permissions</p>
+                    <div className="grid grid-cols-1 gap-2">
+                        {/* Property Management */}
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-zinc-600">Manage Properties</span>
+                            <button
+                                type="button"
+                                onClick={() => setMemberPermissions(prev => ({ ...prev, canManageProperties: !prev.canManageProperties }))}
+                                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${memberPermissions.canManageProperties ? 'bg-indigo-600' : 'bg-zinc-200'}`}
+                            >
+                                <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${memberPermissions.canManageProperties ? 'translate-x-5' : 'translate-x-1'}`} />
+                            </button>
+                        </div>
+                        {/* Tenant Management */}
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-zinc-600">Manage Tenants</span>
+                            <button
+                                type="button"
+                                onClick={() => setMemberPermissions(prev => ({ ...prev, canManageTenants: !prev.canManageTenants }))}
+                                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${memberPermissions.canManageTenants ? 'bg-indigo-600' : 'bg-zinc-200'}`}
+                            >
+                                <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${memberPermissions.canManageTenants ? 'translate-x-5' : 'translate-x-1'}`} />
+                            </button>
+                        </div>
+                        {/* Financials */}
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-zinc-600">View Financials</span>
+                            <button
+                                type="button"
+                                onClick={() => setMemberPermissions(prev => ({ ...prev, canViewFinancials: !prev.canViewFinancials }))}
+                                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${memberPermissions.canViewFinancials ? 'bg-indigo-600' : 'bg-zinc-200'}`}
+                            >
+                                <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${memberPermissions.canViewFinancials ? 'translate-x-5' : 'translate-x-1'}`} />
+                            </button>
+                        </div>
+                        {/* Landlords (Agency) */}
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-zinc-600">View Landlords</span>
+                            <button
+                                type="button"
+                                onClick={() => setMemberPermissions(prev => ({ ...prev, canViewLandlords: !prev.canViewLandlords }))}
+                                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${memberPermissions.canViewLandlords ? 'bg-indigo-600' : 'bg-zinc-200'}`}
+                            >
+                                <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${memberPermissions.canViewLandlords ? 'translate-x-5' : 'translate-x-1'}`} />
+                            </button>
+                        </div>
+                        {/* Settings (Power) */}
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-zinc-600">Manage Settings & Team</span>
+                            <button
+                                type="button"
+                                onClick={() => setMemberPermissions(prev => ({ ...prev, canManageSettings: !prev.canManageSettings }))}
+                                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${memberPermissions.canManageSettings ? 'bg-indigo-600' : 'bg-zinc-200'}`}
+                            >
+                                <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${memberPermissions.canManageSettings ? 'translate-x-5' : 'translate-x-1'}`} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="flex justify-end pt-4">
                     <Button type="submit">{editingMember ? 'Save Changes' : 'Send Invite'}</Button>
                 </div>

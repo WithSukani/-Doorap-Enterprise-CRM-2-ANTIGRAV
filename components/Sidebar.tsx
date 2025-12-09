@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { supabase } from '../src/lib/supabase';
-import { UserProfile, Notification as NotificationData } from '../types';
+import { UserProfile, Notification as NotificationData, PermissionSet } from '../types';
 import { HomeIcon, BuildingOffice2Icon, UsersIcon, WrenchScrewdriverIcon, BellAlertIcon, DocumentCheckIcon, CreditCardIcon, ArrowLeftOnRectangleIcon, XMarkIcon, BanknotesIcon, ListBulletIcon, CalendarDaysIcon, MegaphoneIcon, ShieldCheckIcon, Cog6ToothIcon, UserGroupIcon, IconProps, ClipboardDocumentListIcon, ArchiveBoxIcon, ChatBubbleLeftRightIcon, DoriIcon } from './icons/HeroIcons';
 import NotificationBell from './features/NotificationBell';
+import { DoorapService } from '../src/services/DoorapService';
 
 interface NavItemProps {
   icon: React.ReactElement<IconProps>;
@@ -53,20 +54,31 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({
   currentView, onNavigate, onOpenSubscriptionModal, userProfile, isOpen, setIsOpen
 }) => {
+  // Permission State
+  const [permissions, setPermissions] = React.useState<PermissionSet | null>(null);
+
+  React.useEffect(() => {
+    async function fetchPermissions() {
+      const perms = await DoorapService.getMyPermissions();
+      setPermissions(perms);
+    }
+    fetchPermissions();
+  }, []);
+
   const navItems = [
     { icon: <HomeIcon />, label: 'Dashboard', view: 'dashboard' },
-    { icon: <DoriIcon />, label: 'Dori', view: 'dori' },
-    { icon: <ChatBubbleLeftRightIcon />, label: 'Messages', view: 'messages' },
-    { icon: <BuildingOffice2Icon />, label: 'Properties', view: 'properties' },
-    { icon: <UsersIcon />, label: 'Tenants', view: 'tenants' },
-    { icon: <UserGroupIcon />, label: 'Landlords', view: 'landlords' },
-    { icon: <WrenchScrewdriverIcon />, label: 'Maintenance', view: 'maintenance' },
-    { icon: <BanknotesIcon />, label: 'Financials', view: 'financials' },
+    { icon: <DoriIcon />, label: 'Dori', view: 'dori' }, // Everyone sees Dori for now
+    { icon: <ChatBubbleLeftRightIcon />, label: 'Messages', view: 'messages' }, // Everyone sees Messages
+    { icon: <BuildingOffice2Icon />, label: 'Properties', view: 'properties', requiredPermission: 'canManageProperties' },
+    { icon: <UsersIcon />, label: 'Tenants', view: 'tenants', requiredPermission: 'canManageTenants' },
+    { icon: <UserGroupIcon />, label: 'Landlords', view: 'landlords', requiredPermission: 'canViewLandlords' },
+    { icon: <WrenchScrewdriverIcon />, label: 'Maintenance', view: 'maintenance', requiredPermission: 'canManageProperties' }, // Linked to property management
+    { icon: <BanknotesIcon />, label: 'Financials', view: 'financials', requiredPermission: 'canViewFinancials' },
     { icon: <ClipboardDocumentListIcon />, label: 'Workflow', view: 'workflow' },
     { icon: <ArchiveBoxIcon />, label: 'Documents', view: 'documents' },
     { icon: <CalendarDaysIcon />, label: 'Calendar', view: 'calendar' },
-    { icon: <MegaphoneIcon />, label: 'Vacancies', view: 'vacancies' },
-    { icon: <Cog6ToothIcon />, label: 'Settings', view: 'settings' },
+    { icon: <MegaphoneIcon />, label: 'Vacancies', view: 'vacancies', requiredPermission: 'canManageTenants' }, // Linked to tenant management
+    { icon: <Cog6ToothIcon />, label: 'Settings', view: 'settings', requiredPermission: 'canManageSettings' },
   ];
 
   return (
@@ -114,9 +126,18 @@ const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex-1 overflow-y-auto custom-scrollbar py-2">
           <ul className="space-y-0.5">
             {navItems.filter(item => {
+              // Permission Check
+              if (permissions && item.requiredPermission) {
+                // @ts-ignore - dynamic key access
+                if (!permissions[item.requiredPermission]) {
+                  return false;
+                }
+              }
+
               if (item.view === 'landlords') {
-                // Hide Landlords page ONLY if user is explicitly Self Managing AND has no company name
-                // If they have a Company Name, we assume they are acting as a company even if role says 'self_managing'
+                // Check granular permission first (above), then fallback to role check if permission logic didn't exclude it
+                // If permissions are loaded and 'canViewLandlords' is false, it's already filtered out.
+                // If permissions are NOT loaded (admin/owner default), keep existing logic:
                 return userProfile.role === 'company' || !!userProfile.companyName || !userProfile.role;
               }
               return true;
