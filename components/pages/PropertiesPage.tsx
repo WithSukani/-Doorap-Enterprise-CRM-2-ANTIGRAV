@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Property, Tenant, MaintenanceRequest, Document, CommunicationLog, DocumentTemplate, UserProfile, MeterReading, Folder, Landlord } from '../../types';
 import PageHeader from '../PageHeader';
 import Button from '../common/Button';
 import PropertyForm from '../forms/PropertyForm';
 import { PlusCircleIcon, PencilIcon, TrashIcon, MapPinIcon, BuildingOffice2Icon, ArchiveBoxArrowDownIcon, ArrowUturnLeftIcon, ListBulletIcon, Squares2X2Icon, EyeIcon } from '../icons/HeroIcons';
-import PropertyDetailsModal from '../modals/PropertyDetailsModal';
 import MarketAnalysisModal from '../modals/MarketAnalysisModal';
 
 interface PropertyCardProps {
@@ -106,7 +105,7 @@ const PropertiesPage: React.FC<PropertiesPageProps> = ({
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
-  const [viewingProperty, setViewingProperty] = useState<Property | null>(null);
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [analyzingProperty, setAnalyzingProperty] = useState<Property | null>(null);
   const [viewArchived, setViewArchived] = useState(false);
@@ -138,7 +137,7 @@ const PropertiesPage: React.FC<PropertiesPageProps> = ({
   };
 
   const handleViewDetails = (property: Property) => {
-    setViewingProperty(property);
+    navigate(`/properties/${property.id}`);
   };
 
   const handleSubmitForm = async (propertyData: Property) => {
@@ -324,27 +323,7 @@ const PropertiesPage: React.FC<PropertiesPageProps> = ({
           landlords={landlords}
         />
       )}
-      {viewingProperty && (
-        <PropertyDetailsModal
-          property={viewingProperty}
-          tenants={tenants}
-          maintenanceRequests={maintenanceRequests}
-          onClose={() => setViewingProperty(null)}
-          documents={documents}
-          addDocument={addDocument}
-          deleteDocument={deleteDocument}
-          communicationLogs={communicationLogs}
-          addCommunicationLog={addCommunicationLog}
-          deleteCommunicationLog={deleteCommunicationLog}
-          documentTemplates={documentTemplates}
-          properties={properties}
-          userProfile={userProfile}
-          onMarketAnalysis={handleMarketAnalysis}
-          meterReadings={meterReadings}
-          onAddMeterReading={onAddMeterReading}
-          folders={folders}
-        />
-      )}
+
       {analyzingProperty && (
         <MarketAnalysisModal
           isOpen={!!analyzingProperty}
