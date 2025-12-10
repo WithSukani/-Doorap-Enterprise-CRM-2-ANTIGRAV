@@ -538,7 +538,7 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({
           tenants={tenants}
           userProfile={userProfile}
           landlords={landlords}
-          landlords={landlords}
+
           onSendToLandlord={handleSendToLandlord}
           folders={folders}
         />
